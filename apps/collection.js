@@ -38,7 +38,7 @@ export class RollPigCollection extends plugin {
       return true;
     }
     if (userCount === 0) {
-      await e.reply('你的猪圈空空如也！', quoteFlag());
+      await e.reply(withButtons(e, '你的猪圈空空如也！发送「今日小猪」开始收集。', PANEL_BUTTONS), quoteFlag());
       return true;
     }
     const msg = buildPigstyGrowthSummary(getEventUserName(e), drawState, totalPigs);
@@ -59,7 +59,7 @@ export class RollPigCollection extends plugin {
     }
     const snapshot = store.getCatalogSnapshot(userId(e), 14);
     if (!snapshot.draw_state.pig_ids.length) {
-      await e.reply('你的猪圈空空如也！发送「今日小猪」开始收集。', quoteFlag());
+      await e.reply(withButtons(e, '你的猪圈空空如也！发送「今日小猪」开始收集。', PANEL_BUTTONS), quoteFlag());
       return true;
     }
     const totalPages = Math.max(1, Math.ceil(resourceManager.pigList.length / 40));
@@ -91,7 +91,7 @@ export class RollPigCollection extends plugin {
       }
     }
     if (!entries.length) {
-      await e.reply('你这周还没抽过猪呢！', quoteFlag());
+      await e.reply(withButtons(e, '你这周还没抽过猪呢！', PANEL_BUTTONS), quoteFlag());
       return true;
     }
     try {
