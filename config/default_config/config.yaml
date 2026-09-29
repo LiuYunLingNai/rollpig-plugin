@@ -1,0 +1,33 @@
+# 今日小猪 Plus 插件配置
+# 修改本文件（default_config）不会生效，请改 config/config.yaml。
+# 首次运行会自动把本文件复制成 config/config.yaml，之后以那份为准。
+# 也可以在锅巴面板里可视化配置。
+
+# ============ 烤群友 ============
+# 普通烤群友恢复 1 次所需小时数
+roast_cooldown_hours: 8
+# 普通烤群友最多储存次数
+roast_charge_max: 2
+
+# ============ 图鉴 / 日报 ============
+# 是否启用图片版小猪图鉴
+catalog_enabled: true
+# 未单独设置的群是否默认启用日报
+daily_summary_enabled: false
+
+# ============ PigHub（随机小猪 / 找猪）============
+pighub_enabled: true
+
+# ============ 渲染 ============
+# Puppeteer 截图缩放
+render_scale: 2
+# QQBot 端小猪详情排版：false=图文卡片截图；true=图片+Markdown 引用块（仅 QQBot 官方端生效）
+qqbot_markdown_enabled: false
+
+# ============ AI 烤猪文案（可选）============
+ai_enabled: false
+ai_api_key: ''
+ai_base_url: 'https://api.deepseek.com'
+ai_model: 'deepseek-chat'
+ai_timeout: 20
+ai_max_tokens: 512
