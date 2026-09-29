@@ -1,5 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js';
 import { withButtons, HELP_BUTTONS } from '../lib/flow/qqbot.js';
+import { quoteFlag } from '../lib/flow/reply.js';
 
 const HELP_TEXT = [
   '🐷 今日小猪 Plus 指令帮助',
@@ -26,7 +27,8 @@ const HELP_TEXT = [
   '· 烤箱续火 / 烤箱补货 —— 发起群体补货',
   '',
   '【管理】',
-  '· 小猪日报 开启/关闭/状态 —— 群主/管理员控制日报',
+  '· 日报状态 开启/关闭/状态 —— 群主/管理员控制日报',
+  '· 小猪日报 [群号] —— 立即生成本群日报（预览，不结算保护）',
   '· 同步小猪资源 —— 主人重新加载资源',
   '━━━━━━━━━━━━━━',
   '所有指令可省略 # 前缀，例如直接发「今日小猪」。',
@@ -44,7 +46,7 @@ export class RollPigHelp extends plugin {
   }
 
   async help(e) {
-    await e.reply(withButtons(e, HELP_TEXT, HELP_BUTTONS), true);
+    await e.reply(withButtons(e, HELP_TEXT, HELP_BUTTONS), quoteFlag());
     return true;
   }
 }

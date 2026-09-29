@@ -59,6 +59,13 @@ export function supportGuoba() {
           componentProps: { checkedValue: true, unCheckedValue: false },
         },
         {
+          field: 'daily_report_group_list',
+          label: '日报推送群',
+          bottomHelpMessage:
+            '选中的群每晚 23:45 推送猪圈日报（等同在群里发「小猪日报 开启」）。未选中的群按上面的默认开关处理。',
+          component: 'GSelectGroup',
+        },
+        {
           component: 'Divider',
           label: 'PigHub（随机小猪 / 找猪）',
         },
@@ -84,6 +91,13 @@ export function supportGuoba() {
           field: 'qqbot_markdown_enabled',
           label: 'QQBot Markdown 排版',
           bottomHelpMessage: '关=图文卡片截图；开=图片+Markdown 引用块（仅 QQBot 官方端生效）',
+          component: 'Switch',
+          componentProps: { checkedValue: true, unCheckedValue: false },
+        },
+        {
+          field: 'reply_quote',
+          label: '引用消息回复',
+          bottomHelpMessage: '开启后回复会引用（@ 并引用）触发指令的那条消息；关闭则直接发送',
           component: 'Switch',
           componentProps: { checkedValue: true, unCheckedValue: false },
         },
@@ -131,15 +145,35 @@ export function supportGuoba() {
       ],
 
       getConfigData() {
-        return configControl.get();
+        const cfg = configControl.get();
+        const map = cfg.daily_report_groups || {};
+        return {
+          ...cfg,
+          // 把 {群号: true/false} 映射成锅巴群选择器需要的数组
+          daily_report_group_list: Object.keys(map).filter((gid) => map[gid]),
+        };
       },
 
       setConfigData(data, { Result }) {
         try {
           const patch = {};
           for (const [key, value] of Object.entries(data || {})) {
-            // 锅巴按 field 扁平传回，直接写入
             patch[key] = value;
+          }
+          // 群选择器 -> {群号: true} 映射；未选中的群移除显式开启
+          if ('daily_report_group_list' in patch) {
+            const selected = Array.isArray(patch.daily_report_group_list)
+              ? patch.daily_report_group_list.map(String)
+              : [];
+            delete patch.daily_report_group_list;
+            const oldMap = configControl.get().daily_report_groups || {};
+            const newMap = {};
+            for (const gid of selected) newMap[gid] = true;
+            // 保留此前被显式关闭（false）的群，避免选择器覆盖手动关闭
+            for (const [gid, val] of Object.entries(oldMap)) {
+              if (val === false && !(gid in newMap)) newMap[gid] = false;
+            }
+            patch.daily_report_groups = newMap;
           }
           configControl.setMultiple(patch);
           return Result.ok({}, '保存成功~重启或部分功能即时生效');

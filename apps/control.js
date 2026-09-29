@@ -1,6 +1,9 @@
 import plugin from '../../../lib/plugins/plugin.js';
 import configControl from '../lib/model/config.js';
 import { rollpigDateStr } from '../lib/model/runtime.js';
+import { buildGroupReportSegment } from '../lib/flow/dailyReportJob.js';
+import { withButtons, DAILY_REPORT_BUTTONS } from '../lib/flow/qqbot.js';
+import { quoteFlag } from '../lib/flow/reply.js';
 
 const ENABLE_WORDS = new Set(['开启', '打开', '启用', '开', 'on', 'enable', 'true']);
 const DISABLE_WORDS = new Set(['关闭', '停用', '关', 'off', 'disable', 'false']);
@@ -18,7 +21,8 @@ export class RollPigControl extends plugin {
       event: 'message',
       priority: 500,
       rule: [
-        { reg: '^#?(小猪日报|每日总结设置|rollpig日报)\\s*(.*)$', fnc: 'dailyReportSwitch' },
+        { reg: '^#?(日报状态|每日总结设置|rollpig日报)\\s*(.*)$', fnc: 'dailyReportSwitch' },
+        { reg: '^#?(小猪日报|生成日报|生成小猪日报|预览日报|日报预览)\\s*(\\d*)$', fnc: 'dailyReportPreview' },
         { reg: '^#?小猪(md|MD|markdown|Markdown|排版)\\s*(.*)$', fnc: 'markdownSwitch' },
       ],
     });
@@ -48,7 +52,7 @@ export class RollPigControl extends plugin {
   }
 
   async dailyReportSwitch(e) {
-    const m = e.msg.match(/^#?(?:小猪日报|每日总结设置|rollpig日报)\s*(.*)$/i);
+    const m = e.msg.match(/^#?(?:日报状态|每日总结设置|rollpig日报)\s*(.*)$/i);
     const rawArg = m ? m[1].trim() : '';
     const tokens = rawArg.split(/\s+/).filter(Boolean);
     let action = 'status';
@@ -62,7 +66,7 @@ export class RollPigControl extends plugin {
     }
     if (!targetGroupId && e.group_id) targetGroupId = String(e.group_id);
     if (!targetGroupId) {
-      await e.reply('请在群内使用，或由主人指定群号：小猪日报 开启 123456', true);
+      await e.reply('请在群内使用，或由主人指定群号：日报状态 开启 123456', quoteFlag());
       return true;
     }
 
@@ -73,10 +77,10 @@ export class RollPigControl extends plugin {
 
     if (action === 'status') {
       if ((!e.group_id || String(e.group_id) !== targetGroupId) && !e.isMaster) {
-        await e.reply('只有主人可以查看其他群的小猪日报状态。', true);
+        await e.reply('只有主人可以查看其他群的小猪日报状态。', quoteFlag());
         return true;
       }
-      await e.reply(formatStatus(targetGroupId), true);
+      await e.reply(formatStatus(targetGroupId), quoteFlag());
       return true;
     }
 
@@ -84,13 +88,52 @@ export class RollPigControl extends plugin {
     const canControl =
       e.isMaster || (e.group_id && String(e.group_id) === targetGroupId && this._isManager(e));
     if (!canControl) {
-      await e.reply('只有本群群主/管理员可以控制本群；控制其他群需要主人权限。', true);
+      await e.reply('只有本群群主/管理员可以控制本群；控制其他群需要主人权限。', quoteFlag());
       return true;
     }
 
     this._setGroupStatus(targetGroupId, action === 'enable');
     const label = action === 'enable' ? '开启' : '关闭';
-    await e.reply(`已${label}群 ${targetGroupId} 的小猪日报。\n${formatStatus(targetGroupId)}`, true);
+    await e.reply(`已${label}群 ${targetGroupId} 的小猪日报。\n${formatStatus(targetGroupId)}`, quoteFlag());
+    return true;
+  }
+
+  /**
+   * 手动生成/预览本群猪圈日报（不写入次日保护，仅出图）。
+   * 群主/管理员或主人可用；主人可带群号预览其他群。
+   */
+  async dailyReportPreview(e) {
+    const m = e.msg.match(/^#?(?:小猪日报|生成日报|生成小猪日报|预览日报|日报预览)\s*(\d*)$/);
+    let targetGroupId = m && m[1] ? m[1] : '';
+    if (!targetGroupId && e.group_id) targetGroupId = String(e.group_id);
+    if (!targetGroupId) {
+      await e.reply('请在群内使用，或由主人指定群号：小猪日报 123456', quoteFlag());
+      return true;
+    }
+
+    const canControl =
+      e.isMaster || (e.group_id && String(e.group_id) === targetGroupId && this._isManager(e));
+    if (!canControl) {
+      await e.reply('只有本群群主/管理员可以生成本群日报；生成其他群需要主人权限。', quoteFlag());
+      return true;
+    }
+
+    const quote = quoteFlag();
+    await e.reply('正在生成今日猪圈日报，请稍候…', quote);
+    try {
+      const { status, seg } = await buildGroupReportSegment(targetGroupId, {
+        dateStr: rollpigDateStr(),
+        writeProtection: false,
+      });
+      if (status === 'empty') {
+        await e.reply('今天这个群还没有可展示的活动（没人抽猪 / 没有烤猪记录）。', quote);
+        return true;
+      }
+      await e.reply(withButtons(e, seg, DAILY_REPORT_BUTTONS), quote);
+    } catch (err) {
+      logger?.error?.(`[今日小猪] 手动生成日报失败 group=${targetGroupId}: ${err}`);
+      await e.reply(`生成日报失败：${err.message || err}`, quote);
+    }
     return true;
   }
 
@@ -108,26 +151,26 @@ export class RollPigControl extends plugin {
         `QQBot 小猪 Markdown 排版：${current ? '开启' : '关闭'}\n` +
           `（关闭=图文卡片截图；开启=图片+Markdown 引用块，仅 QQBot 官方端生效）\n` +
           `用法：小猪排版 开启 / 关闭`,
-        true
+        quoteFlag()
       );
       return true;
     }
     if (!e.isMaster) {
-      await e.reply('只有主人可以切换小猪 Markdown 排版。', true);
+      await e.reply('只有主人可以切换小猪 Markdown 排版。', quoteFlag());
       return true;
     }
     let next;
     if (ENABLE_WORDS.has(arg)) next = true;
     else if (DISABLE_WORDS.has(arg)) next = false;
     else {
-      await e.reply('参数无效，请用：小猪排版 开启 / 关闭', true);
+      await e.reply('参数无效，请用：小猪排版 开启 / 关闭', quoteFlag());
       return true;
     }
     configControl.set('qqbot_markdown_enabled', next);
     await e.reply(
       `已${next ? '开启' : '关闭'} QQBot 小猪 Markdown 排版。\n` +
         `${next ? '现在 QQBot 端会用「图片+Markdown 引用块」。' : '现在统一使用图文卡片截图。'}`,
-      true
+      quoteFlag()
     );
     return true;
   }
