@@ -23,6 +23,8 @@ pighub_enabled: true
 render_scale: 2
 # QQBot 端小猪详情排版：false=图文卡片截图；true=图片+Markdown 引用块（仅 QQBot 官方端生效）
 qqbot_markdown_enabled: false
+# 回复时是否引用（@ 并引用）触发指令的那条消息
+reply_quote: true
 
 # ============ AI 烤猪文案（可选）============
 ai_enabled: false

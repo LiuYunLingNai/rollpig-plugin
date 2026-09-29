@@ -2,6 +2,7 @@ import plugin from '../../../lib/plugins/plugin.js';
 import store from '../lib/store/store.js';
 import { getEventUserName } from '../lib/flow/helpers.js';
 import { pickReservationPrepareText } from '../lib/flow/roastFlow.js';
+import { quoteFlag } from '../lib/flow/reply.js';
 
 /**
  * 回复预约通知加入。用户回复 Bot 发出的预约通知，发送「加入/加入预约/加入烤猪」。
@@ -39,7 +40,7 @@ export class RollPigReservationJoin extends plugin {
     if (preparation.status === 'message_not_found') return false;
 
     const targetName = preparation.reservation ? preparation.reservation.target_name : '';
-    await e.reply(pickReservationPrepareText(preparation, { attackerName: name, targetName }), true);
+    await e.reply(pickReservationPrepareText(preparation, { attackerName: name, targetName }), quoteFlag());
     return true;
   }
 }
