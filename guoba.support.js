@@ -52,6 +52,18 @@ export function supportGuoba() {
           componentProps: { checkedValue: true, unCheckedValue: false },
         },
         {
+          field: 'yesterday_style',
+          label: '昨日小猪样式',
+          bottomHelpMessage: 'recap=昨日回顾卡（足迹/经历/小结）；pig=图文小猪卡',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '昨日回顾卡', value: 'recap' },
+              { label: '图文小猪卡', value: 'pig' },
+            ],
+          },
+        },
+        {
           field: 'daily_summary_enabled',
           label: '日报默认开启',
           bottomHelpMessage: '未单独设置的群是否默认启用猪圈日报',

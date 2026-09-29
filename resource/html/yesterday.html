@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<style>
+@font-face {
+  font-family: "RollPig Sans";
+  src: url("{{fontSans}}");
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { display: inline-block; font-family: "RollPig Sans", "Source Han Sans SC", "Microsoft YaHei", sans-serif; }
+.card {
+  width: 720px;
+  padding: 34px 36px 40px;
+  background-image: url("{{bg}}");
+  background-size: cover;
+  background-position: center;
+  color: #5a4a86;
+}
+
+/* 头部 */
+.header { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.header img { width: 44px; height: 44px; object-fit: contain; }
+.header .htext {
+  font-size: 40px; font-weight: 800; letter-spacing: 2px;
+  background: linear-gradient(180deg, #6550a4, #d56fa8);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.subtitle { text-align: center; font-size: 20px; color: rgba(122,92,149,0.85); margin-top: 8px; }
+
+/* 主体面板 */
+.panel {
+  margin-top: 22px; background: rgba(255,255,255,0.5);
+  border: 2px solid rgba(255,255,255,0.75); border-radius: 24px;
+  padding: 24px 26px; box-shadow: 0 8px 20px rgba(150,110,180,0.18);
+}
+
+/* 小猪主区 */
+.pig { display: flex; align-items: center; gap: 22px; }
+.pig .pic {
+  width: 150px; height: 150px; flex: 0 0 150px; border-radius: 20px;
+  background: rgba(255,255,255,0.6); border: 2px solid rgba(255,180,224,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.pig .pic img { max-width: 132px; max-height: 132px; object-fit: contain; }
+.pig .pic .ph { font-size: 60px; }
+.pig .info { flex: 1; min-width: 0; }
+.pig .info .nm { font-size: 34px; font-weight: 800; color: #67509c; }
+.pig .info .ex {
+  display: inline-block; margin-top: 10px; padding: 4px 16px; border-radius: 14px;
+  font-size: 20px; color: #7e560a; background: linear-gradient(180deg,#fff,#fff2be,#ffcf53);
+  border: 1px solid rgba(255,255,255,0.7);
+}
+.pig .info .outcome { margin-top: 12px; font-size: 22px; color: #c65b8f; font-weight: 700; }
+.pig .info .desc { margin-top: 10px; font-size: 19px; line-height: 1.5; color: rgba(90,74,134,0.9); }
+
+/* 分节 */
+.section { margin-top: 20px; }
+.divider { display: flex; align-items: center; justify-content: center; margin: 6px 0 14px; }
+.divider img { height: 26px; object-fit: contain; }
+.section-title { font-size: 24px; font-weight: 800; color: #8a5ea0; text-align: center; }
+
+/* 足迹 chips */
+.footprints { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.fp {
+  display: flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 16px;
+  background: rgba(255,255,255,0.62); border: 1px solid rgba(197,154,229,0.55); font-size: 20px; color: #6a5197;
+}
+.fp .icon { font-size: 22px; }
+.fp .cnt { font-weight: 800; color: #c65b8f; }
+
+/* 经历 */
+.exp { font-size: 21px; line-height: 1.55; color: #5a4a86; padding: 10px 4px; }
+.exp + .exp { border-top: 1px dashed rgba(176,148,200,0.5); }
+
+/* 小结 */
+.summary {
+  font-size: 22px; line-height: 1.5; color: #67509c; text-align: center; font-weight: 700;
+  background: rgba(255,246,253,0.7); border-radius: 16px; padding: 14px 18px;
+}
+
+/* 今日余波 */
+.aftereffect {
+  margin-top: 20px; display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,0.55); border: 2px dashed rgba(120,187,222,0.7);
+  border-radius: 18px; padding: 14px 18px;
+}
+.aftereffect img { width: 40px; height: 40px; object-fit: contain; flex: 0 0 40px; }
+.aftereffect .t { font-size: 20px; line-height: 1.4; color: #46779a; }
+
+.footer { text-align: center; margin-top: 22px; font-size: 18px; color: rgba(122,92,149,0.7); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <img src="{{iconBook}}" />
+      <div class="htext">昨日小猪回顾</div>
+    </div>
+    <div class="subtitle">{{dateStr}} · {{scopeText}}</div>
+
+    <div class="panel">
+      <!-- 小猪主区 -->
+      <div class="pig">
+        <div class="pic">
+          {{if avatar}}<img src="{{avatar}}" />{{else}}<div class="ph">🐷</div>{{/if}}
+        </div>
+        <div class="info">
+          <div class="nm">{{pigName}}</div>
+          <div class="ex">EX Lv.{{exLevel}}</div>
+          {{if outcomeText}}<div class="outcome">{{outcomeText}}</div>{{/if}}
+          {{if pigDesc}}<div class="desc">{{pigDesc}}</div>{{/if}}
+        </div>
+      </div>
+
+      {{if isMakeup}}
+      <div class="section">
+        <div class="summary">这是补签的昨日小猪，没有昨天的互动记录~</div>
+      </div>
+      {{else}}
+
+      <!-- 昨日足迹 -->
+      {{if footprints && footprints.length}}
+      <div class="section">
+        <div class="divider"><img src="{{dividerHighlight}}" /></div>
+        <div class="section-title">昨日足迹</div>
+        <div class="footprints" style="margin-top:14px">
+          {{each footprints fp}}
+          <div class="fp"><span class="icon">{{fp.icon}}</span>{{fp.label}}<span class="cnt">{{fp.count}}</span></div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- 昨日经历 -->
+      {{if experiences && experiences.length}}
+      <div class="section">
+        <div class="divider"><img src="{{dividerHighlight}}" /></div>
+        <div class="section-title">昨日经历</div>
+        <div style="margin-top:10px">
+          {{each experiences ex}}
+          <div class="exp">{{ex}}</div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- 小结 -->
+      {{if summaryText}}
+      <div class="section">
+        <div class="divider"><img src="{{dividerSummary}}" /></div>
+        <div class="summary">{{summaryText}}</div>
+      </div>
+      {{/if}}
+
+      {{/if}}
+    </div>
+
+    <!-- 今日余波 -->
+    {{if aftereffectText}}
+    <div class="aftereffect">
+      <img src="{{iconShield}}" />
+      <div class="t">{{aftereffectText}}</div>
+    </div>
+    {{/if}}
+
+    <div class="footer">🐷 今日小猪 · 昨日回顾</div>
+  </div>
+</body>
+</html>

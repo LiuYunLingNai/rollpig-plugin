@@ -2,10 +2,11 @@ import plugin from '../../../lib/plugins/plugin.js';
 import { segment } from 'oicq';
 import store from '../lib/store/store.js';
 import resourceManager from '../lib/resource/resourceManager.js';
-import { renderPigCard } from '../lib/render/render.js';
+import { renderPigCard, renderYesterdayRecapImage } from '../lib/render/render.js';
 import { resolveDailyPig, ensureYesterdayPig, RECORDED_PIG_RESOURCE_MISSING_TEXT } from '../lib/flow/rollFlow.js';
 import { getEventGroupId, getEventUserName } from '../lib/flow/helpers.js';
 import { deliverReadyReservations } from '../lib/flow/reservationFlow.js';
+import { buildYesterdayRecap } from '../lib/flow/yesterdayRecap.js';
 import { rollpigDateStr } from '../lib/model/runtime.js';
 import * as T from '../lib/model/texts.js';
 import pighub from '../lib/flow/pighub.js';
@@ -249,6 +250,21 @@ export class RollPigRoll extends plugin {
     const snapshot = store.getDailyRollSnapshot(userId, targetDate);
     const exLevel = snapshot?.expert_level_after_roll || 0;
     const prefix = makeupCreated ? T.pick(T.YESTERDAY_MAKEUP_TEXTS) : '';
+
+    // 昨日样式：recap=原项目「昨日回顾卡」（默认）；pig=原来的图文小猪卡
+    if (configControl.get().yesterday_style !== 'pig') {
+      try {
+        const recap = buildYesterdayRecap(userId, { groupId: getEventGroupId(e), dateStr: targetDate });
+        if (recap) {
+          const seg = await renderYesterdayRecapImage(recap);
+          const msg = prefix ? [prefix + '\n', seg] : seg;
+          await e.reply(withButtons(e, msg, PANEL_BUTTONS), quoteFlag());
+          return true;
+        }
+      } catch (err) {
+        logger?.error?.(`[今日小猪] 昨日回顾渲染失败，回退图文卡: ${err}`);
+      }
+    }
     await sendRenderedPig(e, pig, { extraText: prefix, exLevel });
     return true;
   }

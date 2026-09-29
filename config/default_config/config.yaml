@@ -14,6 +14,8 @@ roast_charge_max: 2
 catalog_enabled: true
 # 未单独设置的群是否默认启用日报
 daily_summary_enabled: false
+# 昨日小猪展示样式：recap=昨日回顾卡（默认）；pig=图文小猪卡
+yesterday_style: recap
 
 # ============ PigHub（随机小猪 / 找猪）============
 pighub_enabled: true

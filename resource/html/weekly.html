@@ -3,39 +3,48 @@
 <head>
 <meta charset="UTF-8" />
 <style>
+@font-face {
+  font-family: "RollPig Sans";
+  src: url("{{fontSans}}");
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  width: 800px;
-  font-family: "Source Han Sans SC", "Microsoft YaHei", sans-serif;
-  background: #fff6fb;
+body { display: inline-block; font-family: "RollPig Sans", "Source Han Sans SC", "Microsoft YaHei", sans-serif; }
+.wrap {
+  display: inline-block;
+  padding: 40px 44px 48px;
+  background-image: url("{{bg}}");
+  background-size: cover;
+  background-position: center;
 }
-.wrap { width: 800px; padding: 40px; }
-.title { font-size: 40px; font-weight: bold; text-align: center; color: #ff6fa5; margin-bottom: 10px; }
-.subtitle { font-size: 26px; text-align: center; color: #b06a8c; margin-bottom: 30px; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+.title {
+  font-size: 46px; font-weight: 800; text-align: center; letter-spacing: 4px;
+  background: linear-gradient(180deg, #6550a4, #d56fa8);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+.subtitle { font-size: 26px; text-align: center; color: #8a5ea0; margin-top: 10px; margin-bottom: 30px; }
+.row { display: flex; gap: 20px; }
 .cell {
-  background: #fff;
-  border-radius: 18px;
-  padding: 16px;
+  width: 150px;
+  background: rgba(255,255,255,0.55);
+  border: 2px solid rgba(255,255,255,0.75);
+  border-radius: 20px;
+  padding: 12px 8px 14px;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(255,140,180,.15);
+  box-shadow: 0 6px 14px rgba(150,110,180,0.22);
 }
-.cell img { width: 130px; height: 130px; object-fit: contain; }
-.day { font-size: 22px; color: #999; margin-top: 8px; }
+.cell .pic { width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; }
+.cell img { max-width: 134px; max-height: 134px; object-fit: contain; }
+.cell .day { font-size: 22px; color: #7a5c95; margin-top: 8px; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="title">🐷 本周小猪</div>
     <div class="subtitle">{{subtitle}}</div>
-    <div class="grid">
+    <div class="row">
       {{each items item}}
       <div class="cell">
-        <img src="{{item.avatar}}" />
+        <div class="pic"><img src="{{item.avatar}}" /></div>
         <div class="day">{{item.day}}</div>
       </div>
       {{/each}}
