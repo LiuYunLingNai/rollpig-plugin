@@ -30,6 +30,7 @@ export class RollPigReservationJoin extends plugin {
     if (!replyMessageId) return false;
 
     const name = getEventUserName(e);
+    store.recordUserName(String(e.user_id), name);
     const preparation = store.joinRoastReservationByMessage({
       botId: String(e.self_id),
       groupId: String(e.group_id),
