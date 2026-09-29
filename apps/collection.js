@@ -2,15 +2,13 @@ import plugin from '../../../lib/plugins/plugin.js';
 import { segment } from 'oicq';
 import store from '../lib/store/store.js';
 import resourceManager from '../lib/resource/resourceManager.js';
-import { renderCatalogImage, renderWeeklyImage } from '../lib/render/render.js';
+import { renderCatalogImage, renderWeeklyImage, CATALOG_PAGE_SIZE } from '../lib/render/render.js';
 import { buildPigstyGrowthSummary } from '../lib/flow/rollFlow.js';
 import { getEventUserName } from '../lib/flow/helpers.js';
 import { rollpigToday, rollpigDateStr } from '../lib/model/runtime.js';
 import configControl from '../lib/model/config.js';
 import { withButtons, catalogButtons, PANEL_BUTTONS } from '../lib/flow/qqbot.js';
 import { quoteFlag } from '../lib/flow/reply.js';
-
-const CATALOG_PAGE_SIZE = 40;
 
 export class RollPigCollection extends plugin {
   constructor() {
@@ -58,11 +56,12 @@ export class RollPigCollection extends plugin {
       return true;
     }
     const snapshot = store.getCatalogSnapshot(userId(e), 14);
-    if (!snapshot.draw_state.pig_ids.length) {
+    const unlocked = snapshot.draw_state.pig_ids.length;
+    if (!unlocked) {
       await e.reply(withButtons(e, '你的猪圈空空如也！发送「今日小猪」开始收集。', PANEL_BUTTONS), quoteFlag());
       return true;
     }
-    const totalPages = Math.max(1, Math.ceil(resourceManager.pigList.length / 40));
+    const totalPages = Math.max(1, Math.ceil(unlocked / CATALOG_PAGE_SIZE));
     const currentPage = Math.min(Math.max(1, page), totalPages);
     try {
       const img = await renderCatalogImage({ userName: getEventUserName(e), snapshot, page: currentPage });

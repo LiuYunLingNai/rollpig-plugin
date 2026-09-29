@@ -3,77 +3,171 @@
 <head>
 <meta charset="UTF-8" />
 <style>
+@font-face {
+  font-family: "RollPig Sans";
+  src: url("{{fontSans}}");
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  width: 1000px;
-  font-family: "Source Han Sans SC", "Microsoft YaHei", sans-serif;
-  background: #fdf3f8;
-}
-.wrap { width: 1000px; padding: 40px; }
-.header {
-  background: linear-gradient(135deg,#ffb3d1,#ff7fb0);
-  border-radius: 24px;
-  padding: 32px 40px;
-  color: #fff;
-  margin-bottom: 30px;
-}
-.title { font-size: 44px; font-weight: bold; }
-.subtitle { font-size: 26px; margin-top: 12px; opacity: .95; }
-.stats { display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap; }
-.stat { background: rgba(255,255,255,.25); border-radius: 14px; padding: 10px 20px; font-size: 24px; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 18px;
-}
-.item {
-  background: #fff;
-  border-radius: 18px;
-  padding: 14px 10px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(255,140,180,.15);
+body { width: 1536px; height: 1024px; }
+.canvas {
   position: relative;
+  width: 1536px;
+  height: 1024px;
+  font-family: "RollPig Sans", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  background-image: url("{{bg}}");
+  background-size: 1536px 1024px;
+  overflow: hidden;
+  color: #55458e;
 }
-.item.locked { filter: grayscale(1); opacity: .45; }
-.item img { width: 110px; height: 110px; object-fit: contain; }
-.item .placeholder { font-size: 80px; line-height: 110px; }
-.item .pname { font-size: 22px; color: #333; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.item .lv { font-size: 20px; color: #ff6fa5; margin-top: 4px; }
-.badge {
-  position: absolute; top: 6px; right: 6px;
-  background: #ff5a7a; color: #fff; font-size: 18px;
-  padding: 2px 8px; border-radius: 10px;
+.abs { position: absolute; }
+.c { transform: translate(-50%, -50%); text-align: center; white-space: nowrap; }
+
+/* ===== 标题 ===== */
+.prefix { left: 408px; top: 94px; font-size: 23px; color: rgb(113,87,164); font-weight: 600; }
+.title {
+  left: 408px; top: 138px; font-size: 46px; font-weight: 800; letter-spacing: 2px;
+  background: linear-gradient(180deg, #6550a4, #d56fa8);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.footer { text-align: center; margin-top: 30px; font-size: 24px; color: #b06a8c; }
+
+/* ===== 顶部统计 ===== */
+.stat-label { top: 55px; font-size: 17px; font-weight: 600; }
+.stat-value { top: 84px; font-size: 29px; font-weight: 800; color: rgb(85,69,142); }
+
+/* ===== 进度条 ===== */
+.progress {
+  left: 714px; top: 137px; width: 533px; height: 38px; border-radius: 19px;
+  overflow: hidden; background: rgba(255,255,255,0.28);
+}
+.progress .fill {
+  height: 100%; border-radius: 19px;
+  background: linear-gradient(90deg, rgba(255,158,210,.85), rgba(255,207,129,.8), rgba(154,226,255,.75));
+}
+.progress .ptext {
+  position: absolute; left: 0; top: 0; width: 533px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff; text-shadow: 0 1px 2px rgba(104,59,128,.7);
+}
+
+/* ===== 图鉴卡片 ===== */
+.card {
+  position: absolute; width: 148px; height: 106px; border-radius: 18px;
+  background: rgba(255,255,255,0.40);
+  border: 2px solid rgba(255,255,255,0.74);
+  box-shadow: 0 4px 10px rgba(91,55,130,0.18);
+}
+.card.max { border-color: rgba(255,218,99,0.9); }
+.card .pig { position: absolute; left: 0; top: 6px; width: 148px; height: 48px; display: flex; align-items: center; justify-content: center; }
+.card .pig img { max-width: 54px; max-height: 48px; object-fit: contain; }
+.card .pig .ph { font-size: 26px; }
+.card .nm {
+  position: absolute; left: 6px; top: 59px; width: 136px; height: 18px; line-height: 18px;
+  text-align: center; font-size: 15px; color: #55497f;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card .pill {
+  position: absolute; left: 44px; top: 81px; width: 60px; height: 18px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; border: 1px solid rgba(255,255,255,0.6);
+}
+.pill.lv0 { background: linear-gradient(180deg,#fff,#edf8fc,#cfe4ef); color: #5b7389; }
+.pill.lv1 { background: linear-gradient(180deg,#fff,#fff1fa,#ffd5ed); color: #8e5491; }
+.pill.lv2 { background: linear-gradient(180deg,#fff,#f6f0ff,#e0cfff); color: #69549d; }
+.pill.lv3 { background: linear-gradient(180deg,#fff,#eaf9ff,#bee7fb); color: #46779a; }
+.pill.lv4 { background: linear-gradient(180deg,#fff,#fff4e0,#ffd39c); color: #89581c; }
+.pill.lv5 { background: linear-gradient(180deg,#fffffa,#fff2be,#ffcf53); color: #7e560a; }
+.card .badge {
+  position: absolute; right: 8px; top: 8px; height: 18px; min-width: 37px; padding: 0 8px;
+  border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #fff; border: 1px solid rgba(255,255,255,0.5);
+}
+.badge.max { background: linear-gradient(180deg,#fff5b8,#ffd34f,#ff9d34); }
+.badge.new { background: linear-gradient(180deg,#d3f8ff,#65e0ff,#4b9dff); }
+
+/* ===== 底部本命猪 ===== */
+.fav-avatar {
+  position: absolute; left: 356px; top: 909px; width: 46px; height: 46px; border-radius: 16px;
+  background: rgba(255,255,255,0.64); border: 1px solid rgba(255,180,224,0.7);
+  display: flex; align-items: center; justify-content: center;
+}
+.fav-avatar img { max-width: 39px; max-height: 39px; object-fit: contain; }
+.fav-label { position: absolute; left: 414px; top: 909px; font-size: 13px; color: rgba(141,94,158,0.8); }
+.fav-name { position: absolute; left: 414px; top: 926px; width: 116px; height: 18px; line-height: 18px; font-size: 19px; color: #67509c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-sub { position: absolute; left: 414px; top: 945px; font-size: 13px; color: rgba(108,84,159,0.85); }
+
+/* ===== 底部数据 chip ===== */
+.chip {
+  position: absolute; height: 28px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(197,154,229,0.5); font-size: 14px; color: rgba(104,80,155,0.9);
+}
+.chip .num { font-size: 16px; font-weight: 700; margin: 0 4px; }
+
+/* ===== 页码 ===== */
+.page-arrow { top: 943px; font-size: 30px; color: rgb(177,138,222); }
+.page-text { left: 1260px; top: 943px; font-size: 23px; font-weight: 600; color: rgb(109,88,165); }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="header">
-      <div class="title">🐷 {{userName}} 的小猪图鉴</div>
-      <div class="subtitle">第 {{page}} / {{totalPages}} 页</div>
-      <div class="stats">
-        <div class="stat">已收集 {{unlocked}} / {{total}}</div>
-        <div class="stat">收藏率 {{percent}}%</div>
-        <div class="stat">最高 EX Lv.{{maxLevel}}</div>
-        <div class="stat">连续签到 {{streak}} 天</div>
-      </div>
+  <div class="canvas">
+    <!-- 标题 -->
+    <div class="abs c prefix">{{userName}} 的</div>
+    <div class="abs c title">小猪图鉴</div>
+
+    <!-- 顶部统计 -->
+    <div class="abs c stat-label" style="left:748px; color: rgb(166,90,153)">已解锁</div>
+    <div class="abs c stat-value" style="left:748px">{{unlocked}}/{{total}}</div>
+    <div class="abs c stat-label" style="left:906px; color: rgb(116,96,189)">完成度</div>
+    <div class="abs c stat-value" style="left:906px">{{percent}}%</div>
+    <div class="abs c stat-label" style="left:1058px; color: rgb(79,133,180)">最高 EX</div>
+    <div class="abs c stat-value" style="left:1058px">Lv.{{maxLevel}}</div>
+    <div class="abs c stat-label" style="left:1210px; color: rgb(87,155,154)">满级</div>
+    <div class="abs c stat-value" style="left:1210px">{{maxedCount}} 只</div>
+
+    <!-- 进度条 -->
+    <div class="abs progress">
+      <div class="fill" style="width: {{percent}}%"></div>
+      <div class="ptext">图鉴完成度 {{percent}}%</div>
     </div>
-    <div class="grid">
-      {{each items item}}
-      <div class="item {{item.owned ? '' : 'locked'}}">
-        {{if item.isNew}}<div class="badge">NEW</div>{{/if}}
-        {{if item.avatar}}
-        <img src="{{item.avatar}}" />
-        {{else}}
-        <div class="placeholder">🐷</div>
-        {{/if}}
-        <div class="pname">{{item.name}}</div>
-        {{if item.owned}}<div class="lv">EX Lv.{{item.level}}</div>{{else}}<div class="lv">未解锁</div>{{/if}}
+
+    <!-- 图鉴卡片 -->
+    {{each cards card}}
+    <div class="card {{card.badge === 'MAX' ? 'max' : ''}}" style="left: {{card.x}}px; top: {{card.y}}px">
+      <div class="pig">
+        {{if card.avatar}}<img src="{{card.avatar}}" />{{else}}<div class="ph">🐷</div>{{/if}}
       </div>
-      {{/each}}
+      <div class="nm">{{card.name}}</div>
+      <div class="pill lv{{card.level}}">EX Lv.{{card.level}}</div>
+      {{if card.badge}}<div class="badge {{card.badge === 'MAX' ? 'max' : 'new'}}">{{card.badge}}</div>{{/if}}
     </div>
-    <div class="footer">发送「今日小猪」继续收集吧~</div>
+    {{/each}}
+
+    <!-- 本命猪 -->
+    <div class="fav-avatar">
+      {{if favorite.avatar}}<img src="{{favorite.avatar}}" />{{else}}<span style="font-size:22px">🐷</span>{{/if}}
+    </div>
+    <div class="fav-label">本命猪</div>
+    <div class="fav-name">{{favorite.name}}</div>
+    <div class="fav-sub">EX Lv.{{favorite.level}} · {{favorite.copies}} 次</div>
+
+    <!-- 底部 chip -->
+    <div class="chip" style="left:580px; top:903px; width:237px; background: rgba(255,226,246,0.62)">
+      近 7 天新猪 <span class="num" style="color: rgb(222,106,169)">{{recentNewCount}}</span> 只
+    </div>
+    <div class="chip" style="left:827px; top:903px; width:237px; background: rgba(255,255,255,0.52)">
+      连续打卡 <span class="num" style="color: rgb(127,104,207)">{{checkinStreak}}</span> 天
+    </div>
+    <div class="chip" style="left:580px; top:937px; width:237px; background: rgba(255,255,255,0.52)">
+      近 7 天被烤 <span class="num" style="color: rgb(63,155,207)">{{roasted7d}}</span> 次
+    </div>
+    <div class="chip" style="left:827px; top:937px; width:237px; background: rgba(255,255,255,0.52)">
+      下个里程碑 <span class="num" style="color: rgb(211,138,56)">{{nextMilestone}}</span> 只
+    </div>
+
+    <!-- 页码 -->
+    <div class="abs c page-arrow" style="left:1152px">‹</div>
+    <div class="abs c page-text">第 {{page}} / {{totalPages}} 页</div>
+    <div class="abs c page-arrow" style="left:1368px">›</div>
   </div>
 </body>
 </html>
