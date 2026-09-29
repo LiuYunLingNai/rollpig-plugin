@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<style>
+@font-face {
+  font-family: "RollPig Sans";
+  src: url("{{fontSans}}");
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 1024px;
+  font-family: "RollPig Sans", "Source Han Sans SC", "Microsoft YaHei", serif;
+  background: #cdbb92;
+}
+.paper {
+  width: 1024px;
+  background: #e8d6b2;
+  padding: 34px 45px 28px;
+  color: #12100d;
+}
+.ink { color: #12100d; }
+.red { color: #8c1f13; }
+.bold { font-weight: 800; }
+
+/* ============ 报头 ============ */
+.masthead {
+  border-top: 4px solid #12100d;
+  border-bottom: 1px solid #12100d;
+  padding: 14px 0 10px;
+  position: relative;
+  text-align: center;
+}
+.masthead .title {
+  font-size: 74px;
+  font-weight: 900;
+  letter-spacing: 14px;
+  line-height: 1;
+  color: #12100d;
+  text-indent: 14px;
+}
+.masthead .volume {
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: #12100d;
+  margin-top: 10px;
+}
+.masthead .datebox {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+}
+.masthead .datebox .md { font-size: 34px; font-weight: 800; line-height: 1; }
+.masthead .datebox .yr { font-size: 18px; color: #7a6e5c; margin-top: 4px; }
+.masthead .datebox .wk {
+  font-size: 16px; color: #f5ebd1; background: #7a6e5c;
+  padding: 2px 10px; border-radius: 3px; margin-top: 6px; display: inline-block;
+}
+
+/* ============ 通用区块标题 ============ */
+.section { margin-top: 22px; }
+.section-title {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 27px; font-weight: 900; color: #12100d;
+  margin-bottom: 12px;
+}
+.section-title::before,
+.section-title::after {
+  content: ""; flex: 1; height: 3px; background: #12100d;
+}
+.section-title span { padding: 0 4px; }
+
+/* ============ 速览 ============ */
+.stats { display: flex; border: 3px solid #12100d; }
+.stat {
+  flex: 1; text-align: center; padding: 22px 10px;
+  border-right: 1px solid #12100d;
+}
+.stat:last-child { border-right: none; }
+.stat .label { font-size: 22px; color: #7a6e5c; }
+.stat .value { font-size: 52px; font-weight: 900; color: #8c1f13; line-height: 1.1; margin-top: 6px; }
+.stat .value .unit { font-size: 22px; color: #12100d; margin-left: 4px; }
+
+/* ============ 观察 ============ */
+.observation {
+  border: 3px solid #12100d; background: #f5ebd1;
+  padding: 22px 26px; font-size: 30px; line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* ============ 头条 ============ */
+.headline { border: 3px solid #12100d; padding: 24px 26px; }
+.headline .body { font-size: 30px; line-height: 1.55; white-space: pre-line; }
+.headline .tags { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; }
+.headline .tag {
+  font-size: 19px; border: 2px solid #12100d; color: #12100d;
+  padding: 5px 16px; border-radius: 2px; font-weight: 700;
+}
+
+/* ============ 事件追踪 ============ */
+.events { border: 3px solid #12100d; padding: 22px 26px; }
+.events .intro { font-size: 22px; line-height: 1.5; color: #12100d; margin-bottom: 16px; white-space: pre-line; }
+.event-row { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px dashed #b0a488; }
+.event-row:first-of-type { border-top: none; }
+.event-row .dot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 14px; }
+.event-row .ord { font-size: 22px; font-weight: 800; width: 92px; flex: 0 0 92px; }
+.event-row .detail { font-size: 24px; }
+
+/* ============ 排行 ============ */
+.rankings { display: flex; gap: 16px; }
+.rank-col { flex: 1; border: 3px solid #12100d; padding: 0 0 12px; }
+.rank-col .head {
+  background: #12100d; color: #f5ebd1; text-align: center;
+  font-size: 24px; font-weight: 900; padding: 10px 0; letter-spacing: 3px;
+}
+.rank-entry { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid #d8c9a4; }
+.rank-entry:first-of-type { border-top: none; }
+.rank-entry .no {
+  font-size: 26px; font-weight: 900; width: 34px; text-align: center; flex: 0 0 34px;
+}
+.rank-entry .no.n1 { color: #b26e1c; }
+.rank-entry .no.n2 { color: #63706e; }
+.rank-entry .no.n3 { color: #94471f; }
+.rank-entry img { width: 62px; height: 62px; object-fit: contain; flex: 0 0 62px; }
+.rank-entry .ph { width: 62px; height: 62px; line-height: 62px; text-align: center; font-size: 44px; flex: 0 0 62px; }
+.rank-entry .info { min-width: 0; }
+.rank-entry .info .nm { font-size: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank-entry .info .dt { font-size: 19px; color: #7a6e5c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ============ 保护券 ============ */
+.coupon {
+  border: 3px dashed #8c1f13; background: #f5ebd1;
+  display: flex; align-items: center; gap: 22px; padding: 20px 26px;
+}
+.coupon .shield { font-size: 60px; flex: 0 0 auto; }
+.coupon .cbody { flex: 1; }
+.coupon .cbody .cname { font-size: 30px; font-weight: 900; color: #8c1f13; }
+.coupon .cbody .cben { font-size: 24px; margin-top: 4px; }
+.coupon .cbody .cexp { font-size: 19px; color: #7a6e5c; margin-top: 6px; }
+.coupon .rc { text-align: center; flex: 0 0 auto; }
+.coupon .rc .num { font-size: 48px; font-weight: 900; color: #8c1f13; line-height: 1; }
+.coupon .rc .lbl { font-size: 18px; color: #7a6e5c; margin-top: 6px; }
+
+/* ============ 页脚 ============ */
+.footer {
+  margin-top: 22px; border-top: 3px solid #12100d; padding-top: 12px;
+  text-align: center; font-size: 20px; color: #7a6e5c; letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+  <div class="paper">
+    <!-- 报头 -->
+    <div class="masthead">
+      <div class="title">猪圈日报</div>
+      <div class="volume">{{volume}}</div>
+      <div class="datebox">
+        <div class="md">{{date_month_day}}</div>
+        <div class="yr">{{date_year}}</div>
+        <div class="wk">{{weekday}}</div>
+      </div>
+    </div>
+
+    <!-- 速览 -->
+    {{if stats && stats.length}}
+    <div class="section">
+      <div class="stats">
+        {{each stats item}}
+        <div class="stat">
+          <div class="label">{{item.label}}</div>
+          <div class="value">{{item.value}}<span class="unit">{{item.unit}}</span></div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    <!-- 今日观察 -->
+    {{if observation}}
+    <div class="section">
+      <div class="section-title"><span>今日观察</span></div>
+      <div class="observation">{{@ observation.html}}</div>
+    </div>
+    {{/if}}
+
+    <!-- 今日头条 -->
+    {{if headline}}
+    <div class="section">
+      <div class="section-title"><span>今日头条</span></div>
+      <div class="headline">
+        <div class="body">{{@ headline.html}}</div>
+        {{if headline.tags && headline.tags.length}}
+        <div class="tags">
+          {{each headline.tags tag}}<div class="tag">{{tag}}</div>{{/each}}
+        </div>
+        {{/if}}
+      </div>
+    </div>
+    {{/if}}
+
+    <!-- 事件追踪 -->
+    {{if events && events.length}}
+    <div class="section">
+      <div class="section-title"><span>事件追踪</span></div>
+      <div class="events">
+        {{if event_intro}}<div class="intro">{{event_intro}}</div>{{/if}}
+        {{each events ev}}
+        <div class="event-row">
+          <div class="dot" style="background: {{ev.color}}"></div>
+          <div class="ord" style="color: {{ev.color}}">{{ev.title}}</div>
+          <div class="detail">{{ev.detail}}</div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    <!-- 今日排行 -->
+    {{if rankings && rankings.length}}
+    <div class="section">
+      <div class="section-title"><span>今日排行</span></div>
+      <div class="rankings">
+        {{each rankings col}}
+        <div class="rank-col">
+          <div class="head">{{col.title}}</div>
+          {{each col.entries en}}
+          <div class="rank-entry">
+            <div class="no n{{en.rank}}">{{en.rank}}</div>
+            {{if en.avatar}}<img src="{{en.avatar}}" />{{else}}<div class="ph">🐷</div>{{/if}}
+            <div class="info">
+              <div class="nm">{{en.name}}</div>
+              <div class="dt">{{en.detail}}</div>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+
+    <!-- 次日保护券 -->
+    {{if coupon}}
+    <div class="section">
+      <div class="section-title"><span>次日保护券</span></div>
+      <div class="coupon">
+        <div class="shield">🛡️</div>
+        <div class="cbody">
+          <div class="cname">{{coupon.name}}</div>
+          <div class="cben">{{coupon.benefit}}</div>
+          <div class="cexp">{{coupon.expires}}</div>
+        </div>
+        {{if coupon.roast_count}}
+        <div class="rc">
+          <div class="num">{{coupon.roast_count}}</div>
+          <div class="lbl">昨日被烤</div>
+        </div>
+        {{/if}}
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="footer">{{footer}}</div>
+  </div>
+</body>
+</html>
