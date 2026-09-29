@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 800px; }
+body {
+  font-family: "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  background: #ffffff;
+}
+.card {
+  position: relative;
+  width: 800px;
+  min-height: 800px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.avatar-wrap {
+  width: 240px;
+  height: 240px;
+  border-radius: 30px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(255, 226, 239);
+}
+.avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.placeholder {
+  font-size: 120px;
+  color: rgb(154, 92, 135);
+  line-height: 240px;
+}
+.name {
+  margin-top: 20px;
+  font-size: 48px;
+  font-weight: bold;
+  color: rgb(32, 32, 32);
+  text-align: center;
+  line-height: 58px;
+}
+.desc {
+  margin-top: 20px;
+  font-size: 30px;
+  color: rgb(85, 85, 85);
+  text-align: center;
+  line-height: 38px;
+}
+.analysis {
+  margin-top: 30px;
+  width: 720px;
+  font-size: 28px;
+  line-height: 1.5;
+  color: rgb(51, 51, 51);
+  text-align: center;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ex {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  background: linear-gradient(135deg, #ff9ec4, #ff6fa5);
+  color: #fff;
+  font-size: 26px;
+  font-weight: bold;
+  padding: 6px 18px;
+  border-radius: 20px;
+}
+</style>
+</head>
+<body>
+  <div class="card">
+    {{if exLevel > 0}}<div class="ex">EX Lv.{{exLevel}}</div>{{/if}}
+    <div class="avatar-wrap">
+      {{if avatar}}
+      <img src="{{avatar}}" />
+      {{else}}
+      <div class="placeholder">🐷</div>
+      {{/if}}
+    </div>
+    <div class="name">{{name}}</div>
+    {{if desc}}<div class="desc">{{desc}}</div>{{/if}}
+    {{if analysis}}<div class="analysis">{{analysis}}</div>{{/if}}
+  </div>
+</body>
+</html>
