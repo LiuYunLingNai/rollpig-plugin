@@ -379,11 +379,11 @@ export class RollPigRoast extends plugin {
 
     const candidates = await getGroupRollCandidates(e, store, new Set([attackerId, String(e.self_id)]));
     if (candidates === null) {
-      await e.reply('暂时无法读取当前群成员，随机烤猪没有执行。', quoteFlag());
+      await e.reply(withButtons(e, '暂时无法读取当前群成员，随机烤猪没有执行。', ROAST_BUTTONS), quoteFlag());
       return true;
     }
     if (!candidates.length) {
-      await e.reply('今天还没有别人抽猪，没有可以烤的目标！', quoteFlag());
+      await e.reply(withButtons(e, '今天还没有别人抽猪，没有可以烤的目标！', ROAST_BUTTONS), quoteFlag());
       return true;
     }
     const attackerPigId = store.getDailyRoll(attackerId);
@@ -393,7 +393,7 @@ export class RollPigRoast extends plugin {
     }
     const attackerPig = getPigById(attackerPigId);
     if (!attackerPig) {
-      await e.reply(RECORDED_PIG_RESOURCE_MISSING_TEXT, quoteFlag());
+      await e.reply(withButtons(e, RECORDED_PIG_RESOURCE_MISSING_TEXT, ROAST_BUTTONS), quoteFlag());
       return true;
     }
     store.markGroupRollSeen(attackerId, attackerPig.id, groupId);
@@ -402,19 +402,19 @@ export class RollPigRoast extends plugin {
     const targetName = await getGroupMemberDisplayName(e, targetId);
     const targetPig = getPigById(store.getDailyRoll(targetId));
     if (!targetPig) {
-      await e.reply(`系统随机选中了【${targetName}】，但对方的猪数据异常。`, quoteFlag());
+      await e.reply(withButtons(e, `系统随机选中了【${targetName}】，但对方的猪数据异常。`, ROAST_BUTTONS), quoteFlag());
       return true;
     }
     store.markGroupRollSeen(targetId, targetPig.id, groupId);
 
     if (store.isProtected(groupId, targetId)) {
       const protText = T.pickFormat(T.PROTECTION_BLOCK_TEXTS, { target: targetName });
-      await e.reply(`系统随机选中了【${targetName}】——\n${protText}`, quoteFlag());
+      await e.reply(withButtons(e, `系统随机选中了【${targetName}】——\n${protText}`, ROAST_BUTTONS), quoteFlag());
       return true;
     }
     const blockText = pickRandomTargetBlockText(targetName, targetPig);
     if (blockText) {
-      await e.reply(blockText, quoteFlag());
+      await e.reply(withButtons(e, blockText, ROAST_BUTTONS), quoteFlag());
       return true;
     }
     const cd = store.consumeRoastCooldown(attackerId, {
@@ -422,7 +422,7 @@ export class RollPigRoast extends plugin {
       maxCharges: resolveRoastChargeMax(),
     });
     if (!cd.allowed) {
-      await e.reply(formatCooldownMessage(cd.remaining_seconds), quoteFlag());
+      await e.reply(withButtons(e, formatCooldownMessage(cd.remaining_seconds), ROAST_BUTTONS), quoteFlag());
       return true;
     }
     const intro = T.pickFormat(T.RANDOM_ROAST_INTRO_TEXTS, { target: targetName }) + '\n';
@@ -494,16 +494,20 @@ export class RollPigRoast extends plugin {
     });
     if (result.completed) {
       await e.reply(
-        T.pickFormat(T.ROAST_REFILL_SUCCESS_TEXTS, {
-          votes: 1,
-          benefited: result.benefited_user_ids.length,
-          max_charges: resolveRoastChargeMax(),
-          success_count: 1,
-        }),
+        withButtons(
+          e,
+          T.pickFormat(T.ROAST_REFILL_SUCCESS_TEXTS, {
+            votes: 1,
+            benefited: result.benefited_user_ids.length,
+            max_charges: resolveRoastChargeMax(),
+            success_count: 1,
+          }),
+          ROAST_BUTTONS
+        ),
         quoteFlag()
       );
     } else {
-      await e.reply('补货未能完成，请稍后再试。', quoteFlag());
+      await e.reply(withButtons(e, '补货未能完成，请稍后再试。', ROAST_BUTTONS), quoteFlag());
     }
     return true;
   }
