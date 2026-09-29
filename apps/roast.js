@@ -178,9 +178,11 @@ export class RollPigRoast extends plugin {
       return true;
     }
 
+    store.recordUserName(attackerId, attackerName);
     const target = await resolveRoastTarget(e);
-    const targetId = target.target_id;
-    const targetName = target.target_name;
+    const targetId = target.targetId;
+    const targetName = target.targetName;
+    if (target.isGroupMember && targetId) store.recordUserName(targetId, targetName);
     const kind = !targetId
       ? 'missing'
       : targetId === attackerId
@@ -215,7 +217,7 @@ export class RollPigRoast extends plugin {
       await e.reply(botText, quoteFlag());
       return true;
     }
-    if (!target.is_group_member) {
+    if (!target.isGroupMember) {
       await e.reply('暂时无法确认对方仍在本群，请核对成员后再试。', quoteFlag());
       return true;
     }
@@ -250,11 +252,17 @@ export class RollPigRoast extends plugin {
     let targetPig = null;
     if (preparation.status !== 'target_ready') {
       if (preparation.status === 'protected') {
-        await e.reply(T.pickFormat(T.PROTECTION_BLOCK_TEXTS, { target: targetName }), quoteFlag());
+        await e.reply(
+          withButtons(e, T.pickFormat(T.PROTECTION_BLOCK_TEXTS, { target: targetName }), ROAST_BUTTONS),
+          quoteFlag()
+        );
         return true;
       }
       if (preparation.status === 'cooldown_denied' && preparation.cooldown) {
-        await e.reply(formatCooldownMessage(preparation.cooldown.remaining_seconds), quoteFlag());
+        await e.reply(
+          withButtons(e, formatCooldownMessage(preparation.cooldown.remaining_seconds), ROAST_BUTTONS),
+          quoteFlag()
+        );
         return true;
       }
       if (preparation.status === 'force_denied') {
@@ -312,7 +320,7 @@ export class RollPigRoast extends plugin {
         maxCharges: resolveRoastChargeMax(),
       });
       if (!cd.allowed) {
-        await e.reply(formatCooldownMessage(cd.remaining_seconds), quoteFlag());
+        await e.reply(withButtons(e, formatCooldownMessage(cd.remaining_seconds), ROAST_BUTTONS), quoteFlag());
         return true;
       }
     }
@@ -344,7 +352,7 @@ export class RollPigRoast extends plugin {
   async _finishUnrolledAttempt(e, attackerName, forceMode) {
     const attempt = store.recordUnrolledRoastAttempt(String(e.user_id));
     if (attempt.count <= 1) {
-      await e.reply(T.pick(T.UNROLLED_ROAST_WARNING_TEXTS), quoteFlag());
+      await e.reply(withButtons(e, T.pick(T.UNROLLED_ROAST_WARNING_TEXTS), ROAST_BUTTONS), quoteFlag());
       return;
     }
     let foodPig;

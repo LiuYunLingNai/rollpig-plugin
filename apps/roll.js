@@ -9,7 +9,14 @@ import { deliverReadyReservations } from '../lib/flow/reservationFlow.js';
 import { rollpigDateStr } from '../lib/model/runtime.js';
 import * as T from '../lib/model/texts.js';
 import pighub from '../lib/flow/pighub.js';
-import { withButtons, PANEL_BUTTONS, isQQBot, buildPigDetailMarkdown } from '../lib/flow/qqbot.js';
+import {
+  withButtons,
+  PANEL_BUTTONS,
+  RANDOM_BUTTONS,
+  SEARCH_BUTTONS,
+  isQQBot,
+  buildPigDetailMarkdown,
+} from '../lib/flow/qqbot.js';
 import { syncBaseResource, syncGifOverlay, getSyncState } from '../lib/resource/resourceSync.js';
 import configControl from '../lib/model/config.js';
 import { quoteFlag } from '../lib/flow/reply.js';
@@ -81,6 +88,7 @@ export class RollPigRoll extends plugin {
   async todayPig(e) {
     const userId = String(e.user_id);
     const groupId = getEventGroupId(e);
+    store.recordUserName(userId, getEventUserName(e));
     const resolution = resolveDailyPig(userId, groupId, { includeProgress: true });
     if (resolution.recorded_pig_missing) {
       await e.reply(RECORDED_PIG_RESOURCE_MISSING_TEXT, quoteFlag());
@@ -109,23 +117,26 @@ export class RollPigRoll extends plugin {
     let count = m ? parseInt(m[1], 10) : 1;
     count = Math.max(1, Math.min(count, 10));
     if (!(await pighub.ensureReady())) {
-      await e.reply('连不上 PigHub，请稍后再试。', quoteFlag());
+      await e.reply(withButtons(e, '连不上 PigHub，请稍后再试。', RANDOM_BUTTONS), quoteFlag());
       return true;
     }
     const selected = pighub.sample(count);
     if (!selected.length) {
-      await e.reply('PigHub 图片索引为空，请稍后再试。', quoteFlag());
+      await e.reply(withButtons(e, 'PigHub 图片索引为空，请稍后再试。', RANDOM_BUTTONS), quoteFlag());
       return true;
     }
     if (count === 1) {
       const url = pighub.buildImageUrl(selected[0]);
-      await e.reply([segment.image(url)], quoteFlag());
+      await e.reply(withButtons(e, [segment.image(url)], RANDOM_BUTTONS), quoteFlag());
       return true;
     }
     // 多图合并转发（仅群聊）
     if (!e.group_id) {
       const url = pighub.buildImageUrl(selected[0]);
-      await e.reply(['私聊暂不支持多张连发，先给你一张：\n', segment.image(url)], quoteFlag());
+      await e.reply(
+        withButtons(e, ['私聊暂不支持多张连发，先给你一张：\n', segment.image(url)], RANDOM_BUTTONS),
+        quoteFlag()
+      );
       return true;
     }
     const forwardMsgs = [];
@@ -139,15 +150,18 @@ export class RollPigRoll extends plugin {
       });
     }
     if (!forwardMsgs.length) {
-      await e.reply('PigHub 图片数据异常，请稍后再试。', quoteFlag());
+      await e.reply(withButtons(e, 'PigHub 图片数据异常，请稍后再试。', RANDOM_BUTTONS), quoteFlag());
       return true;
     }
     try {
       const forward = await e.group.makeForwardMsg(forwardMsgs);
-      await e.reply(forward);
+      await e.reply(withButtons(e, forward, RANDOM_BUTTONS));
     } catch (err) {
       logger?.warn?.(`[随机小猪] 合并转发失败: ${err}`);
-      await e.reply('PigHub 图片加载或合并转发超时了，请稍后再试。', quoteFlag());
+      await e.reply(
+        withButtons(e, 'PigHub 图片加载或合并转发超时了，请稍后再试。', RANDOM_BUTTONS),
+        quoteFlag()
+      );
     }
     return true;
   }
@@ -160,22 +174,25 @@ export class RollPigRoll extends plugin {
     const m = e.msg.match(/^#?(找猪|搜猪)\s+(.+)$/);
     const keyword = m ? m[2].trim() : '';
     if (!keyword) {
-      await e.reply('请加上关键词，如：找猪 玩偶', quoteFlag());
+      await e.reply(withButtons(e, '请加上关键词，如：找猪 玩偶', SEARCH_BUTTONS), quoteFlag());
       return true;
     }
     if (!(await pighub.ensureReady())) {
-      await e.reply('连不上 PigHub，请稍后再试。', quoteFlag());
+      await e.reply(withButtons(e, '连不上 PigHub，请稍后再试。', SEARCH_BUTTONS), quoteFlag());
       return true;
     }
     const found = pighub.search(keyword);
     if (!found.length) {
-      await e.reply(`没找到叫「${keyword}」的猪。`, quoteFlag());
+      await e.reply(withButtons(e, `没找到叫「${keyword}」的猪。`, SEARCH_BUTTONS), quoteFlag());
       return true;
     }
     if (!e.group_id) {
       const url = pighub.buildImageUrl(found[0]);
       const extra = found.length > 1 ? `\n共找到 ${found.length} 张，私聊仅展示第 1 张。` : '';
-      await e.reply([String(found[0].title || '未命名小猪'), segment.image(url), extra], quoteFlag());
+      await e.reply(
+        withButtons(e, [String(found[0].title || '未命名小猪'), segment.image(url), extra], SEARCH_BUTTONS),
+        quoteFlag()
+      );
       return true;
     }
     const forwardMsgs = [];
@@ -190,10 +207,13 @@ export class RollPigRoll extends plugin {
     }
     try {
       const forward = await e.group.makeForwardMsg(forwardMsgs);
-      await e.reply(forward);
+      await e.reply(withButtons(e, forward, SEARCH_BUTTONS));
     } catch (err) {
       logger?.warn?.(`[找猪] 合并转发失败: ${err}`);
-      await e.reply('PigHub 图片加载或合并转发超时了，请稍后再试。', quoteFlag());
+      await e.reply(
+        withButtons(e, 'PigHub 图片加载或合并转发超时了，请稍后再试。', SEARCH_BUTTONS),
+        quoteFlag()
+      );
     }
     return true;
   }
@@ -223,7 +243,7 @@ export class RollPigRoll extends plugin {
     }
     const pig = resourceManager.getPigById(pigId);
     if (!pig) {
-      await e.reply('昨天那只猪暂时不在当前资源包里。', quoteFlag());
+      await e.reply(withButtons(e, '昨天那只猪暂时不在当前资源包里。', PANEL_BUTTONS), quoteFlag());
       return true;
     }
     const snapshot = store.getDailyRollSnapshot(userId, targetDate);
