@@ -22,13 +22,21 @@
 
 ## 📦 安装
 
-将本目录放入 Yunzai 的 `plugins/` 下：
+在 Yunzai 根目录执行，克隆到 `plugins/rollpig-plugin`：
 
+```bash
+git clone --depth=1 https://github.com/LiuYunLingNai/rollpig-plugin.git ./plugins/rollpig-plugin
 ```
-Yunzai/plugins/rollpig-plugin/
+
+国内网络访问 GitHub 不稳定时，可用镜像：
+
+```bash
+git clone --depth=1 https://ghp.lyln114514.top/https://github.com/LiuYunLingNai/rollpig-plugin.git ./plugins/rollpig-plugin
 ```
 
 无需额外安装依赖，渲染复用 Yunzai 自带的 `puppeteer` 渲染器；`oicq`、`node-schedule` 等均由框架提供。重启 Bot 即可。
+
+安装后可发 `#小猪更新` / `#小猪强制更新` 更新插件。
 
 ## 🗂️ 目录结构
 
