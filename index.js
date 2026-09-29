@@ -35,6 +35,13 @@ try {
   } catch (err) {
     logger.warn(`[今日小猪] 数据清理失败: ${err}`);
   }
+  // 注册猪圈日报定时任务（每晚 23:45 推送 + 结算次日保护）
+  try {
+    const { registerDailyReportSchedule } = await import('./lib/flow/dailyReportJob.js');
+    registerDailyReportSchedule();
+  } catch (err) {
+    logger.warn(`[今日小猪] 日报定时任务注册失败: ${err}`);
+  }
 } catch (err) {
   logger.error(`[今日小猪] 初始化失败: ${err}`);
 }
