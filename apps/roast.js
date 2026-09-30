@@ -28,7 +28,7 @@ import {
 } from '../lib/flow/helpers.js';
 import { resolveRoastCooldownSeconds, resolveRoastChargeMax } from '../lib/model/runtime.js';
 import * as T from '../lib/model/texts.js';
-import { withButtons, buildPigDetailMarkdown, isQQBot, ROAST_BUTTONS } from '../lib/flow/qqbot.js';
+import { withButtons, buildPigDetailMarkdown, isQQBot, ROAST_BUTTONS, ROAST_REFILL_GUIDE_BUTTONS } from '../lib/flow/qqbot.js';
 import configControl from '../lib/model/config.js';
 import { quoteFlag } from '../lib/flow/reply.js';
 import crypto from 'crypto';
@@ -470,7 +470,10 @@ export class RollPigRoast extends plugin {
       deliveryBotId: String(e.self_id),
     });
     if (prep.status === 'insufficient_active') {
-      await e.reply(T.pick(T.ROAST_REFILL_INSUFFICIENT_ACTIVE_TEXTS), quoteFlag());
+      await e.reply(
+        withButtons(e, T.pick(T.ROAST_REFILL_INSUFFICIENT_ACTIVE_TEXTS), ROAST_REFILL_GUIDE_BUTTONS),
+        quoteFlag()
+      );
       return true;
     }
     if (prep.status === 'existing') {
