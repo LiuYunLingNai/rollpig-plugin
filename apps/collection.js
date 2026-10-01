@@ -1,4 +1,4 @@
-import plugin from '../../../lib/plugins/plugin.js';
+import { RollPigApp } from '../lib/flow/base.js';
 import { segment } from 'oicq';
 import store from '../lib/store/store.js';
 import resourceManager from '../lib/resource/resourceManager.js';
@@ -10,7 +10,7 @@ import configControl from '../lib/model/config.js';
 import { withButtons, catalogButtons, PANEL_BUTTONS } from '../lib/flow/qqbot.js';
 import { quoteFlag } from '../lib/flow/reply.js';
 
-export class RollPigCollection extends plugin {
+export class RollPigCollection extends RollPigApp {
   constructor() {
     super({
       name: '小猪猪圈',

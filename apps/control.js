@@ -1,4 +1,4 @@
-import plugin from '../../../lib/plugins/plugin.js';
+import { RollPigApp } from '../lib/flow/base.js';
 import configControl from '../lib/model/config.js';
 import { rollpigDateStr } from '../lib/model/runtime.js';
 import { buildGroupReportSegment } from '../lib/flow/dailyReportJob.js';
@@ -13,7 +13,7 @@ const STATUS_WORDS = new Set(['状态', '查看', '查询', 'status', 'info']);
  * 小猪日报群开关。日报默认关闭，需群主/管理员或主人开启。
  * 开关状态存储在插件 config.json 的 daily_report_groups 字段。
  */
-export class RollPigControl extends plugin {
+export class RollPigControl extends RollPigApp {
   constructor() {
     super({
       name: '小猪日报开关',

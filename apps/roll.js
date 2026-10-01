@@ -1,4 +1,4 @@
-import plugin from '../../../lib/plugins/plugin.js';
+import { RollPigApp } from '../lib/flow/base.js';
 import { segment } from 'oicq';
 import store from '../lib/store/store.js';
 import resourceManager from '../lib/resource/resourceManager.js';
@@ -64,7 +64,7 @@ async function sendRenderedPig(e, pigData, { extraText = '', trailingText = '', 
   return true;
 }
 
-export class RollPigRoll extends plugin {
+export class RollPigRoll extends RollPigApp {
   constructor() {
     super({
       name: '今天是什么小猪',

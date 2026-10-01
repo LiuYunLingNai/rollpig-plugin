@@ -1,4 +1,4 @@
-import plugin from '../../../lib/plugins/plugin.js';
+import { RollPigApp } from '../lib/flow/base.js';
 import { withButtons, HELP_BUTTONS } from '../lib/flow/qqbot.js';
 import { quoteFlag } from '../lib/flow/reply.js';
 
@@ -35,7 +35,7 @@ const HELP_TEXT = [
   '所有指令可省略 # 前缀，例如直接发「今日小猪」。',
 ].join('\n');
 
-export class RollPigHelp extends plugin {
+export class RollPigHelp extends RollPigApp {
   constructor() {
     super({
       name: '小猪帮助',

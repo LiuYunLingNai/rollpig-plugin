@@ -1,4 +1,4 @@
-import plugin from '../../../lib/plugins/plugin.js';
+import { RollPigApp } from '../lib/flow/base.js';
 import store from '../lib/store/store.js';
 import { getEventUserName } from '../lib/flow/helpers.js';
 import { pickReservationPrepareText } from '../lib/flow/roastFlow.js';
@@ -7,7 +7,7 @@ import { quoteFlag } from '../lib/flow/reply.js';
 /**
  * 回复预约通知加入。用户回复 Bot 发出的预约通知，发送「加入/加入预约/加入烤猪」。
  */
-export class RollPigReservationJoin extends plugin {
+export class RollPigReservationJoin extends RollPigApp {
   constructor() {
     super({
       name: '预约烤猪加入',

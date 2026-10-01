@@ -1,4 +1,4 @@
-import plugin from '../../../lib/plugins/plugin.js';
+import { RollPigApp } from '../lib/flow/base.js';
 import { update as Update } from '../../other/update.js';
 import { quoteFlag } from '../lib/flow/reply.js';
 
@@ -7,7 +7,7 @@ import { quoteFlag } from '../lib/flow/reply.js';
  * 复用 TRSS-Yunzai 内置更新逻辑（git pull / 强制更新 / 更新日志 / 自动重启），
  * 只把「小猪更新」系列指令映射到本插件目录 rollpig-plugin。
  */
-export class RollPigUpdate extends plugin {
+export class RollPigUpdate extends RollPigApp {
   constructor() {
     super({
       name: '小猪更新',

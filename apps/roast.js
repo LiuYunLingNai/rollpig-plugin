@@ -1,4 +1,4 @@
-import plugin from '../../../lib/plugins/plugin.js';
+import { RollPigApp } from '../lib/flow/base.js';
 import { segment } from 'oicq';
 import store from '../lib/store/store.js';
 import resourceManager, { getPigById } from '../lib/resource/resourceManager.js';
@@ -99,7 +99,7 @@ async function finishRoastOutcome(e, outcome, {
   await e.reply(withButtons(e, text, ROAST_BUTTONS), quoteFlag());
 }
 
-export class RollPigRoast extends plugin {
+export class RollPigRoast extends RollPigApp {
   constructor() {
     super({
       name: '烤猪',
