@@ -23,6 +23,7 @@ import {
   getEventUserName,
   getGroupMemberDisplayName,
   getGroupRollCandidates,
+  isGroupManager,
   resolveRoastTarget,
   buildDailyFeedRoastText,
 } from '../lib/flow/helpers.js';
@@ -450,7 +451,7 @@ export class RollPigRoast extends RollPigApp {
     return true;
   }
 
-  // ================= 烤箱续火（简化版：管理员/主人直接补货） =================
+  // ================= 烤箱续火（简化版：管理员/主人一键确认补货） =================
   async refill(e) {
     if (!e.group_id) {
       await e.reply('烤箱续火只能在群里发起。', quoteFlag());
@@ -458,6 +459,8 @@ export class RollPigRoast extends RollPigApp {
     }
     const groupId = String(e.group_id);
     const initiatorId = String(e.user_id);
+    // 权限先判定：原版由群主/管理员/主人放行，非管理者只能登记等待
+    const isManager = isGroupManager(e);
     const activeUsers = store.getGroupActiveUserIds(groupId);
     if (!activeUsers.has(initiatorId)) {
       await e.reply(T.pick(T.ROAST_REFILL_INACTIVE_INITIATOR_TEXTS), quoteFlag());
@@ -476,12 +479,21 @@ export class RollPigRoast extends RollPigApp {
       );
       return true;
     }
+
+    // 已有进行中的申请：原版会重新验票并尝试结算，这里简化为
+    // 管理以上直接对这条已存在的申请确认放行，避免非管理先发起后无人能结算。
     if (prep.status === 'existing') {
-      await e.reply('本群已有一场补货投票在进行中，请稍后。', quoteFlag());
-      return true;
+      if (!isManager) {
+        await e.reply(
+          `🔥本群已有一场续火申请在进行中。\n当前实现为简化版：需要群主/管理员/主人发送「烤箱续火」确认放行。`,
+          quoteFlag()
+        );
+        return true;
+      }
+      return this.completeRefill(e, prep.request.request_id, initiatorId);
     }
-    // 简化：由群管理员/主人一键确认补货（不做表情回应投票）
-    const isManager = e.isMaster || ['owner', 'admin'].includes(e.sender?.role || '');
+
+    // 新申请：非管理者只登记等待，由管理以上确认
     if (!isManager) {
       await e.reply(
         `🔥【烤箱续火申请】已登记。\n当前实现为简化版：需要群主/管理员/主人发送「烤箱续火」确认放行。\n` +
@@ -490,10 +502,21 @@ export class RollPigRoast extends RollPigApp {
       );
       return true;
     }
+    return this.completeRefill(e, prep.request.request_id, initiatorId);
+  }
+
+  /**
+   * 结算一条续火申请（简化版一键补货），成功/失败分别回文案。
+   * @param {object} e 事件
+   * @param {string} requestId 申请 ID
+   * @param {string} voterId 确认人
+   */
+  async completeRefill(e, requestId, voterId) {
+    const maxCharges = resolveRoastChargeMax();
     const result = store.completeGroupRoastRefill({
-      requestId: prep.request.request_id,
-      voterIds: [initiatorId],
-      maxCharges: resolveRoastChargeMax(),
+      requestId,
+      voterIds: [voterId],
+      maxCharges,
     });
     if (result.completed) {
       await e.reply(
@@ -502,8 +525,8 @@ export class RollPigRoast extends RollPigApp {
           T.pickFormat(T.ROAST_REFILL_SUCCESS_TEXTS, {
             votes: 1,
             benefited: result.benefited_user_ids.length,
-            max_charges: resolveRoastChargeMax(),
-            success_count: 1,
+            max_charges: maxCharges,
+            success_count: (result.request?.success_count_before || 0) + 1,
           }),
           ROAST_BUTTONS
         ),
