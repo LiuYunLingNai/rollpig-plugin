@@ -24,16 +24,16 @@ import { quoteFlag } from '../lib/flow/reply.js';
 
 /**
  * 发送小猪卡片。
- * - 非 QQBot 端：puppeteer 渲染整卡（图文合一）。
- * - QQBot 端：图片单独发，名称/描述/分析放进 Markdown 引用块，末尾追加功能按钮。
+ * - 非官方端：puppeteer 渲染整卡（图文合一）。
+ * - QQBot / 钉钉端：图片单独发，名称/描述/分析放进 Markdown 引用块，末尾追加功能按钮。
  */
 async function sendRenderedPig(e, pigData, { extraText = '', trailingText = '', exLevel = 0, buttons = PANEL_BUTTONS } = {}) {
   const appearance = resourceManager.resolvePigAppearance(pigData, exLevel);
   const renderData = appearance.pig_data;
   const imagePath = appearance.image_path;
 
-  // QQBot 端且开启 Markdown 格式：只发「图片段 + 引用块文字 + 按钮」，
-  // 交给 QQBot-Plugin 适配器（raw markdown 模式）自动把三者合并成一条 markdown 消息。
+  // QQBot / 钉钉端且开启 Markdown 格式：只发「图片段 + 引用块文字 + 按钮」，
+  // 交给适配器把三者合并成一条 markdown 消息（钉钉另按 ActionCard / 互动卡片渲染按钮）。
   // 不再手拼 segment.markdown（那会被适配器单独推成一条，反而拆两条）。
   if (isQQBot(e) && configControl.get().qqbot_markdown_enabled) {
     const msg = [];

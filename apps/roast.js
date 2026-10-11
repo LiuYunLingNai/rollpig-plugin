@@ -36,8 +36,8 @@ import crypto from 'crypto';
 
 /**
  * 渲染并发送小猪卡片（烤猪成品）。
- * - 非 QQBot 端 / 未开 Markdown：puppeteer 渲染整卡（图文合一）。
- * - QQBot 端且开启 Markdown：图片段 + 引用块文字 + 按钮，交给适配器合并成一条。
+ * - 非官方端 / 未开 Markdown：puppeteer 渲染整卡（图文合一）。
+ * - QQBot / 钉钉端且开启 Markdown：图片段 + 引用块文字 + 按钮，交给适配器合并成一条。
  */
 async function sendRoastCard(e, pigData, { extraText = '', trailingText = '', buttons = ROAST_BUTTONS } = {}) {
   const appearance = resourceManager.resolvePigAppearance(pigData, 0);

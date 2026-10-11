@@ -10,7 +10,7 @@ export function supportGuoba() {
     pluginInfo: {
       name: 'rollpig-plugin',
       title: '今日小猪 Plus',
-      description: '每日抽猪、图鉴收集、烤猪互动，支持云端资源同步与 QQBot 按钮/Markdown',
+      description: '每日抽猪、图鉴收集、烤猪互动，支持云端资源同步与 QQBot/钉钉 按钮/Markdown',
       author: 'Bear_lele, Felis（Yunzai 移植）',
       authorLink: 'https://pig.felislab.cc',
       link: 'https://pig.felislab.cc',
@@ -101,8 +101,8 @@ export function supportGuoba() {
         },
         {
           field: 'qqbot_markdown_enabled',
-          label: 'QQBot Markdown 排版',
-          bottomHelpMessage: '关=图文卡片截图；开=图片+Markdown 引用块（仅 QQBot 官方端生效）',
+          label: 'Markdown 排版（QQBot/钉钉）',
+          bottomHelpMessage: '关=图文卡片截图；开=图片+Markdown 引用块（仅 QQBot 官方端与钉钉端生效）',
           component: 'Switch',
           componentProps: { checkedValue: true, unCheckedValue: false },
         },

@@ -138,7 +138,7 @@ export class RollPigControl extends RollPigApp {
   }
 
   /**
-   * QQBot 端小猪详情排版开关（全局，仅主人可改）。
+   * 官方端小猪详情排版开关（全局，仅主人可改），QQBot 与钉钉生效。
    * 关闭（默认）：沿用图文卡片截图；开启：图片 + Markdown 引用块。
    */
   async markdownSwitch(e) {
@@ -148,8 +148,8 @@ export class RollPigControl extends RollPigApp {
 
     if (!arg || STATUS_WORDS.has(arg)) {
       await e.reply(
-        `QQBot 小猪 Markdown 排版：${current ? '开启' : '关闭'}\n` +
-          `（关闭=图文卡片截图；开启=图片+Markdown 引用块，仅 QQBot 官方端生效）\n` +
+        `小猪 Markdown 排版：${current ? '开启' : '关闭'}\n` +
+          `（关闭=图文卡片截图；开启=图片+Markdown 引用块，仅 QQBot 官方端与钉钉端生效）\n` +
           `用法：小猪排版 开启 / 关闭`,
         quoteFlag()
       );
@@ -168,8 +168,8 @@ export class RollPigControl extends RollPigApp {
     }
     configControl.set('qqbot_markdown_enabled', next);
     await e.reply(
-      `已${next ? '开启' : '关闭'} QQBot 小猪 Markdown 排版。\n` +
-        `${next ? '现在 QQBot 端会用「图片+Markdown 引用块」。' : '现在统一使用图文卡片截图。'}`,
+      `已${next ? '开启' : '关闭'}小猪 Markdown 排版。\n` +
+        `${next ? '现在 QQBot / 钉钉端会用「图片+Markdown 引用块」。' : '现在统一使用图文卡片截图。'}`,
       quoteFlag()
     );
     return true;
