@@ -72,7 +72,7 @@ export class RollPigRoll extends RollPigApp {
       event: 'message',
       priority: 500,
       rule: [
-        { reg: '^#?(今天是什么小猪|今日小猪|本日小猪|当日小猪)$', fnc: 'todayPig' },
+        { reg: '^#?(今天是什么小猪|今日小猪|本日小猪|当日小猪|猪来)$', fnc: 'todayPig' },
         { reg: '^#?随机小猪\\s*(\\d+)?$', fnc: 'randomPig' },
         { reg: '^#?(找猪|搜猪)\\s+(.+)$', fnc: 'findPig' },
         { reg: '^#?明日小猪$', fnc: 'tomorrowPig' },
