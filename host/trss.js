@@ -265,7 +265,11 @@ export async function createTrssHost(options = {}) {
     },
     toLegacy(content, bot) {
       const constructors = oldSegment();
-      return toSegments(content).flatMap(item => {
+      const items = toSegments(content);
+      // 旧适配器把显式 markdown 当独立消息发送；图文卡正文必须作为 text
+      // 与图片、按钮一同交给适配器合并。无图片的 Markdown 保持原语义。
+      const hasImage = items.some(item => item.type === 'image');
+      return items.flatMap(item => {
         switch (item.type) {
           case 'text': return [{ type: 'text', text: item.text }];
           case 'image': {
@@ -278,7 +282,9 @@ export async function createTrssHost(options = {}) {
           }
           case 'atAll': return [constructors?.at ? constructors.at('all') : { type: 'at', qq: 'all' }];
           case 'reply': return [constructors?.reply ? constructors.reply(item.messageId) : { type: 'reply', id: item.messageId }];
-          case 'markdown': return [constructors?.markdown ? constructors.markdown({ content: item.content }) : { type: 'markdown', data: { content: item.content } }];
+          case 'markdown':
+            if (hasImage) return [{ type: 'text', text: item.content }];
+            return [constructors?.markdown ? constructors.markdown({ content: item.content }) : { type: 'markdown', data: { content: item.content } }];
           case 'keyboard': {
             const rows = item.rows.slice(0, 5).map(row => row.slice(0, 5).map(button => {
               const result = { text: button.label, style: button.style ?? 0 };

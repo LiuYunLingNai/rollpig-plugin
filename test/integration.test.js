@@ -59,6 +59,7 @@ test('real NG gameplay, opaque IDs, permissions, persistence and reload', { time
     };
     let message = await send('/今日小猪');
     assert(message.message.some(s => s.type === 'image'));
+    assert(message.message.some(s => s.type === 'markdown' && s.content));
     const keyboard = message.message.find(s => s.type === 'keyboard');
     assert(keyboard?.rows.flat().some(b => b.data === '今日小猪' && b.action === 'input' && b.enter));
     const initial = JSON.parse(await readFile(state.dataFile, 'utf8'));

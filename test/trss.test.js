@@ -73,7 +73,7 @@ test('native-like segments flatten, retain media sources, and convert all output
     assert.equal(converted[1].file, 'https://example.invalid/pig.png');
     assert(Buffer.isBuffer(converted[2].file));
     assert.equal(converted[3].qq, 'opaque-user');
-    assert.deepEqual(converted[4].data, { content: '**猪**' });
+    assert.deepEqual(converted[4], { type: 'text', text: '**猪**' });
     assert.deepEqual(converted[5].data[0][0], { text: '开始', style: 1, callback: '今日小猪', enter: true });
     assert.deepEqual(converted[5].data[0][1], { text: '查找', style: 0, input: '找猪 ', enter: false });
     assert.equal(converted[5].data[0][2].link, 'https://example.invalid');
@@ -88,6 +88,30 @@ test('native-like segments flatten, retain media sources, and convert all output
     assert(!f.host.app.bots.online()[0].caps.has('forward'));
     f.bot.adapter = 'DingTalk'; assert(f.host.app.bots.online()[0].caps.has('keyboard'));
     f.bot.adapter = 'unknown'; assert.deepEqual([...f.host.app.bots.online()[0].caps], []);
+  } finally { await f.close(); }
+});
+
+test('TRSS image captions stay in the image/text/button batch; standalone Markdown remains Markdown', async () => {
+  const f = await fixture({ segment: {
+    image: file => ({ type: 'image', file }),
+    markdown: data => ({ type: 'markdown', data }),
+    button: (...data) => ({ type: 'button', data }),
+  } });
+  try {
+    const caption = '> 小猪名称\r> 描述与分析';
+    for (const adapter of ['QQBot', 'DingTalk']) {
+      f.bot.adapter = adapter;
+      const e = normalizeTrssEvent(f.event('今日小猪'), f.host);
+      const before = f.sent.length;
+      await e.reply([[seg.image('https://example.invalid/pig.png'), seg.markdown(caption)],
+        seg.keyboard([[{ label: '再来', action: 'input', data: '今日小猪', enter: true }]])]);
+      assert.equal(f.sent.length, before + 1);
+      assert.deepEqual(f.sent.at(-1).message.map(item => item.type), ['image', 'text', 'button']);
+      assert.equal(f.sent.at(-1).message[1].text, caption);
+    }
+    assert.deepEqual(f.host.toLegacy(seg.markdown(caption), f.bot), [
+      { type: 'markdown', data: { content: caption } },
+    ]);
   } finally { await f.close(); }
 });
 
@@ -258,7 +282,10 @@ test('shared real TRSS commands repeat today pig, own pigsty, join reservation b
     };
     let result = await dispatch('今日小猪');
     assert(result.message.some(item => item.type === 'image'));
-    assert(result.message.some(item => item.type === 'markdown'));
+    assert(!result.message.some(item => item.type === 'markdown'));
+    assert.match(textOf(result), /测试小猪/);
+    assert.match(textOf(result), /测试描述/);
+    assert.match(textOf(result), /测试分析/);
     assert(result.message.some(item => item.type === 'button'));
     const today = Object.keys(store.data.history)[0];
     const pig = store.data.history[today][owner];
