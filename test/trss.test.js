@@ -107,8 +107,18 @@ test('TRSS image captions stay in the image/text/button batch; standalone Markdo
         seg.keyboard([[{ label: '再来', action: 'input', data: '今日小猪', enter: true }]])]);
       assert.equal(f.sent.length, before + 1);
       assert.deepEqual(f.sent.at(-1).message.map(item => item.type), ['image', 'text', 'button']);
-      assert.equal(f.sent.at(-1).message[1].text, caption);
+      assert.equal(f.sent.at(-1).message[1].text, '\r' + caption);
     }
+    const image = seg.image('https://example.invalid/pig.png');
+    for (const prefix of ['\r', '\n', '\r\n']) {
+      const text = prefix + caption;
+      assert.equal(f.host.toLegacy([image, seg.markdown(text)], f.bot)[1].text, text);
+    }
+    const multiple = f.host.toLegacy([image, seg.markdown(caption), seg.markdown('后续正文'), image, seg.markdown(caption)], f.bot);
+    assert.equal(multiple[1].text, '\r' + caption);
+    assert.equal(multiple[2].text, '后续正文');
+    assert.equal(multiple[4].text, '\r' + caption);
+    assert.equal(f.host.toLegacy([seg.markdown(caption), image], f.bot)[0].text, caption);
     assert.deepEqual(f.host.toLegacy(seg.markdown(caption), f.bot), [
       { type: 'markdown', data: { content: caption } },
     ]);

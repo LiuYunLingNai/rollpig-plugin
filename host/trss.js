@@ -246,7 +246,7 @@ export async function createTrssHost(options = {}) {
       // 旧适配器把显式 markdown 当独立消息发送；图文卡正文必须作为 text
       // 与图片、按钮一同交给适配器合并。无图片的 Markdown 保持原语义。
       const hasImage = items.some(item => item.type === 'image');
-      return items.flatMap(item => {
+      return items.flatMap((item, index) => {
         switch (item.type) {
           case 'text': return [{ type: 'text', text: item.text }];
           case 'image': {
@@ -260,7 +260,12 @@ export async function createTrssHost(options = {}) {
           case 'atAll': return [constructors?.at ? constructors.at('all') : { type: 'at', qq: 'all' }];
           case 'reply': return [constructors?.reply ? constructors.reply(item.messageId) : { type: 'reply', id: item.messageId }];
           case 'markdown':
-            if (hasImage) return [{ type: 'text', text: item.content }];
+            if (hasImage) {
+              // 图片后的正文另起一行，但仍作为 text 留在同一条图文消息里。
+              const text = items[index - 1]?.type === 'image' && item.content && !/^[\r\n]/.test(item.content)
+                ? '\r' + item.content : item.content;
+              return [{ type: 'text', text }];
+            }
             return [constructors?.markdown ? constructors.markdown({ content: item.content }) : { type: 'markdown', data: { content: item.content } }];
           case 'keyboard': {
             const rows = item.rows.slice(0, 5).map(row => row.slice(0, 5).map(button => {
