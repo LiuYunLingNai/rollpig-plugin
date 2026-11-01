@@ -169,7 +169,6 @@ export async function createTrssHost(options = {}) {
   const controller = new AbortController();
   const disposers = [];
   let rendererPromise;
-  let renderSequence = 0;
   let disposed;
   const rootBot = () => options.rootBot ?? globalThis.Bot;
   const logger = options.logger ?? globalThis.logger ?? console;
@@ -226,36 +225,14 @@ export async function createTrssHost(options = {}) {
       host.signal.throwIfAborted();
       rendererPromise ??= options.puppeteer ? Promise.resolve(options.puppeteer) : import(oldModule('lib/puppeteer/puppeteer.js')).then(module => module.default);
       const renderer = await rendererPromise;
-      const name = `rollpig-plugin/${path.basename(template, path.extname(template))}`;
+      if (!renderer.screenshot) throw new Error('Yunzai 渲染器不可用');
+      const name = settings.name ?? `rollpig-plugin/${path.basename(template, path.extname(template))}`;
       const scale = Math.min(4, Math.max(1, Number(settings.viewport?.scale) || 2));
-      const width = Math.min(10000, Math.max(1, Math.round(Number(settings.viewport?.width) || 800)));
-      const type = ['png', 'jpeg', 'webp'].includes(settings.type) ? settings.type : 'jpeg';
-      const params = { ...data, tplFile: template, saveId: `card_${renderSequence = (renderSequence + 1) % 20}`,
-        imgType: type, scale, selector: settings.selector, viewport: { width, height: 1000, deviceScaleFactor: scale },
-        multiPage: false, pageGotoParams: { waitUntil: 'networkidle0' } };
-      let image;
-      // The old Puppeteer screenshot hardcodes #container/body and ignores scale/viewport.
-      // Its public browser + dealTpl hooks allow accurate per-render options, without mutating the singleton.
-      if (renderer.browserInit && renderer.dealTpl && !settings.multiPage) {
-        await renderer.browserInit();
-        if (!renderer.browser) throw new Error('Yunzai Puppeteer 浏览器不可用');
-        const saved = renderer.dealTpl(name, params);
-        if (!saved) throw new Error('Yunzai 模板编译失败');
-        const page = await renderer.browser.newPage();
-        try {
-          await page.setViewport(params.viewport);
-          await page.goto(pathToFileURL(path.resolve(root, '../..', saved)).href, params.pageGotoParams);
-          host.signal.throwIfAborted();
-          const element = settings.selector ? await page.$(settings.selector) : await page.$('#container') ?? await page.$('body');
-          if (!element) throw new Error(`找不到截图区域 ${settings.selector ?? 'body'}`);
-          image = await element.screenshot({ type, ...(type === 'png' ? {} : { quality: settings.quality ?? 90 }) });
-        } finally { await page.close(); }
-      } else {
-        if (!renderer.screenshot) throw new Error('Yunzai 渲染器不可用');
-        // Third-party renderer facades may consume these fields; backend support is not assumed.
-        logger.debug?.('[今日小猪] 使用旧渲染器 screenshot；缩放/选择器支持由后端决定');
-        image = await renderer.screenshot(name, params);
-      }
+      // 沿用改造前的调用，不把 NG 的 viewport/selector 强加给旧宿主。
+      // 旧渲染器继续决定裁剪区域、像素倍率、图片格式以及截图生命周期。
+      const image = await renderer.screenshot(name, {
+        scale, tplFile: template, ...data, pageGotoParams: { waitUntil: 'networkidle0' },
+      });
       host.signal.throwIfAborted();
       if (!image) throw new Error('Yunzai 渲染器返回空结果');
       const normalized = image instanceof Uint8Array || typeof image === 'string' ? [trssSegment.image(image)] : toSegments(image);

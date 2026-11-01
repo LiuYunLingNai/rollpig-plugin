@@ -139,7 +139,13 @@ test('event normalization keeps legacy reply unchanged, IDs, roles, quote and of
     assert.equal(f.sent[1].message[0].type, 'at');
     f.bot.adapter = 'DingTalk';
     await normalizeTrssEvent(event, f.host).reply('test', { at: true });
-    assert.equal(f.sent[2].data.at, true);
+    assert.equal(f.sent[2].data.at, false);
+    assert.deepEqual(f.sent[2].message.map(item => item.type), ['at', 'text']);
+    assert.equal(f.sent[2].message[0].qq, 'joiner-openid');
+    assert.equal(f.sent[2].message[1].text, 'test');
+    await normalizeTrssEvent(event, f.host).reply([seg.at('target-openid'), 'already mentioned'], { at: true });
+    assert.equal(f.sent[3].data.at, false);
+    assert.equal(f.sent[3].message.filter(item => item.type === 'at').length, 1);
     const privateEvent = normalizeTrssEvent(f.event('private', owner, { isGroup: false, group_id: undefined, group: undefined, message_type: 'private' }), f.host);
     assert.equal(privateEvent.target.scene, 'private'); assert.equal(privateEvent.group, undefined); assert(privateEvent.isMaster);
   } finally { await f.close(); }
@@ -204,28 +210,25 @@ test('cron honors timezone, overlap, cancellation and passes AbortSignal not leg
   } finally { await f.close(); }
 });
 
-test('render converts legacy image and bytes; Puppeteer hooks apply selector, width, scale and type', async () => {
-  const f = await fixture();
+test('TRSS rendering preserves the pre-port screenshot call and leaves viewport/crop to the renderer', async () => {
+  const calls = [];
+  let raw = { type: 'image', file: Buffer.from('legacy-image') };
+  const f = await fixture({ puppeteer: {
+    browserInit() { assert.fail('must not bypass the legacy screenshot method'); },
+    dealTpl() { assert.fail('the legacy renderer owns template compilation'); },
+    async screenshot(name, data) { calls.push({ name, data }); return raw; },
+  } });
   try {
-    const image = await f.host.render('D:/fake/card.html', {}, { type: 'png', viewport: { width: 900, scale: 3 } });
+    const image = await f.host.render('D:/fake/card.html', { title: '测试' }, {
+      name: 'rollpig-card', selector: '.card', viewport: { width: 1200, scale: 3 }, type: 'png',
+    });
     assert.equal(image.file.kind, 'buffer');
-    const calls = [];
-    const puppeteer = { browserInit: async () => {}, dealTpl: (name, params) => { calls.push(['template', name, params]); return 'temp/card.html'; },
-      browser: { newPage: async () => ({ setViewport: async options => calls.push(['viewport', options]),
-        goto: async (...args) => calls.push(['goto', ...args]),
-        $: async selector => { calls.push(['selector', selector]); return { screenshot: async options => { calls.push(['shot', options]); return Buffer.from('direct-bytes'); } }; },
-        close: async () => calls.push(['close']),
-      }) } };
-    const direct = await createTrssHost({ root: f.dataDir, dataDir: f.dataDir, masterIds: [], config: f.host.config, logger,
-      schedule: { scheduleJob() {} }, rootBot: f.rootBot, puppeteer });
-    try {
-      const image = await direct.render('D:/fake/card.html', { title: '测试' }, { selector: '.card', viewport: { width: 1200, scale: 3 }, type: 'png' });
-      assert.equal(image.file.kind, 'buffer');
-      assert.deepEqual(calls.find(item => item[0] === 'viewport')[1], { width: 1200, height: 1000, deviceScaleFactor: 3 });
-      assert.equal(calls.find(item => item[0] === 'selector')[1], '.card');
-      assert.deepEqual(calls.find(item => item[0] === 'shot')[1], { type: 'png' });
-      assert.equal(calls.at(-1)[0], 'close');
-    } finally { await direct.dispose(); }
+    assert.deepEqual(calls[0], {
+      name: 'rollpig-card',
+      data: { scale: 3, tplFile: 'D:/fake/card.html', title: '测试', pageGotoParams: { waitUntil: 'networkidle0' } },
+    });
+    raw = Buffer.from('raw-image');
+    assert.equal((await f.host.render('D:/fake/card.html', {}, { name: 'rollpig-card' })).file.kind, 'buffer');
   } finally { await f.close(); }
 });
 

@@ -81,7 +81,9 @@ test('legacy root entry loads shared gameplay without NG while preserving existi
           const msg=await command(cmd);assert(msg.content.some(item=>item.type==='image'),cmd);
         }
         assert.equal(globalThis.__shots.length,5);
+        assert.deepEqual(globalThis.__shots.map(shot=>shot.name),['rollpig-card','rollpig-catalog','rollpig-yesterday','rollpig-weekly','rollpig-daily-report']);
         assert(globalThis.__shots.every(shot=>shot.data.tplFile.startsWith(root)));
+        assert(globalThis.__shots.every(shot=>!('viewport' in shot.data)&&!('selector' in shot.data)&&!('imgType' in shot.data)&&!('saveId' in shot.data)));
         const date=Object.keys(store.data.history)[0],pig=store.data.history[date]['10001'];
         const copies=store.data.pig_progress['10001'][pig].copies;
         await command('#今日小猪');assert.equal(store.data.pig_progress['10001'][pig].copies,copies);

@@ -70,10 +70,16 @@ export function normalizeTrssEvent(event, host = getContext()) {
         const items = host.toLegacyEvent(content, event);
         let at = replyOptions.at ?? false;
         const openid = event.sender?.openid ?? event.raw?.sender?.openid ?? event.user_openid;
-        if (at && isGroup && openid && host.isQqBotEvent(event)
-          && !items.some(item => item.type === 'at' || item.type === 'text' && item.text.includes('<qqbot-at-user'))) {
-          const escaped = String(openid).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-          items.unshift({ type: 'text', text: `<qqbot-at-user id="${escaped}" />\r` });
+        if (at && isGroup) {
+          if (!items.some(item => item.type === 'at' || item.type === 'text' && item.text.includes('<qqbot-at-user'))) {
+            if (openid && host.isQqBotEvent(event)) {
+              const escaped = String(openid).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+              items.unshift({ type: 'text', text: `<qqbot-at-user id="${escaped}" />\r` });
+            } else {
+              // 原版直接前置 at 段；框架的 data.at 会额外插入换行。
+              items.unshift(...host.toLegacyEvent(host.segment.at(uid), event));
+            }
+          }
           at = false;
         }
         const result = await event.reply(items, Boolean(replyOptions.quote), {
