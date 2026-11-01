@@ -41,4 +41,22 @@ const Path = {
   pkg: path.join(rootDir, 'package.json'),
 };
 
+// NG 使用 ctx.dataDir；TRSS 仍绑定插件自己的 data/，用户配置路径不变。
+export function bindPaths(ctx) {
+  const data = ctx.dataDir;
+  Object.assign(Path, {
+    data,
+    dataFile: path.join(data, 'pig_data.json'),
+    pigHubCache: path.join(data, 'pighub_images.json'),
+    cardCache: path.join(data, 'cards'),
+    resourceCache: path.join(data, 'resources'),
+    activeResourceDir: path.join(data, 'resources', 'active'),
+    activeImageDir: path.join(data, 'resources', 'active', 'images'),
+    resourceStateFile: path.join(data, 'resources', 'state.json'),
+    gifOverlayDir: path.join(data, 'resources', 'gif-overlay'),
+    gifOverlayImageDir: path.join(data, 'resources', 'gif-overlay', 'images'),
+    gifOverlayStateFile: path.join(data, 'resources', 'gif-overlay', 'state.json'),
+  });
+}
+
 export default Path;

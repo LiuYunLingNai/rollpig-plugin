@@ -1,7 +1,10 @@
 {
   "name": "rollpig-plugin",
   "version": "1.0.0",
-  "description": "今天是什么小猪（今日小猪）— Yunzai 群聊收集、成长与互动插件",
+  "description": "今天是什么小猪（今日小猪）— Yunzai/TRSS 与 Yunzai-NG 双宿主插件",
+  "yunzai": { "name": "rollpig", "entry": "ng/index.js" },
+  "engines": { "node": ">=20.11.0" },
+  "scripts": { "test": "node --test test/*.test.js" },
   "type": "module",
   "main": "index.js",
   "author": "Bear_lele, Felis (Ported to Yunzai)",

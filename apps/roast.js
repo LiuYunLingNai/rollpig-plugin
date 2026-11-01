@@ -1,5 +1,5 @@
-import { RollPigApp } from '../lib/flow/base.js';
-import { segment } from 'oicq';
+import { logger, segment } from '../host/index.js';
+import { CommandGroup } from '../lib/flow/base.js';
 import store from '../lib/store/store.js';
 import resourceManager, { getPigById } from '../lib/resource/resourceManager.js';
 import { renderPigCard } from '../lib/render/render.js';
@@ -31,13 +31,13 @@ import { resolveRoastCooldownSeconds, resolveRoastChargeMax } from '../lib/model
 import * as T from '../lib/model/texts.js';
 import { withButtons, buildPigDetailMarkdown, isQQBot, ROAST_BUTTONS, ROAST_REFILL_GUIDE_BUTTONS } from '../lib/flow/qqbot.js';
 import configControl from '../lib/model/config.js';
-import { quoteFlag } from '../lib/flow/reply.js';
+import { quoteFlag, reply } from '../lib/flow/reply.js';
 import crypto from 'crypto';
 
 /**
  * 渲染并发送小猪卡片（烤猪成品）。
- * - 非官方端 / 未开 Markdown：puppeteer 渲染整卡（图文合一）。
- * - QQBot / 钉钉端且开启 Markdown：图片段 + 引用块文字 + 按钮，交给适配器合并成一条。
+ * - 默认通过 NG 渲染器生成整卡。
+ * - 支持 Markdown 且开启排版时发送原生图片、Markdown 和可用的按钮。
  */
 async function sendRoastCard(e, pigData, { extraText = '', trailingText = '', buttons = ROAST_BUTTONS } = {}) {
   const appearance = resourceManager.resolvePigAppearance(pigData, 0);
@@ -47,8 +47,8 @@ async function sendRoastCard(e, pigData, { extraText = '', trailingText = '', bu
     if (appearance.image_path) msg.push(segment.image(appearance.image_path));
     let text = buildPigDetailMarkdown(appearance.pig_data, { heading: extraText });
     if (trailingText) text += '\r' + String(trailingText).replace(/^[\r\n]+/, '');
-    if (text) msg.push(text);
-    await e.reply(withButtons(e, msg, buttons), quoteFlag());
+    if (text) msg.push(segment.markdown(text));
+    await reply(e, withButtons(e, msg, buttons), quoteFlag());
     return true;
   }
 
@@ -57,14 +57,14 @@ async function sendRoastCard(e, pigData, { extraText = '', trailingText = '', bu
     img = await renderPigCard(appearance.pig_data, appearance.image_path, 0);
   } catch (err) {
     logger?.error?.(`[今日小猪] 烤猪卡片渲染失败: ${err}`);
-    await e.reply('图片生成失败。', quoteFlag());
+    await reply(e, '图片生成失败。', quoteFlag());
     return false;
   }
   const msg = [];
   if (extraText) msg.push(extraText.replace(/[\r\n]+$/, ''));
   msg.push(img);
   if (trailingText) msg.push(trailingText.replace(/^[\r\n]+/, ''));
-  await e.reply(withButtons(e, msg, buttons), quoteFlag());
+  await reply(e, withButtons(e, msg, buttons), quoteFlag());
   return true;
 }
 
@@ -97,10 +97,10 @@ async function finishRoastOutcome(e, outcome, {
   }
   let text = outcome.plain_text;
   if (feedText) text += '\n' + feedText;
-  await e.reply(withButtons(e, text, ROAST_BUTTONS), quoteFlag());
+  await reply(e, withButtons(e, text, ROAST_BUTTONS), quoteFlag());
 }
 
-export class RollPigRoast extends RollPigApp {
+export class RollPigRoast extends CommandGroup {
   constructor() {
     super({
       name: '烤猪',
@@ -108,27 +108,27 @@ export class RollPigRoast extends RollPigApp {
       event: 'message',
       priority: 500,
       rule: [
-        { reg: '^#?今日烤猪$', fnc: 'selfRoast' },
-        { reg: '^#?(烤群友|加急生火|强行点火|打点后厨|偷换烤架|贿赂主厨).*', fnc: 'roastMember' },
-        { reg: '^#?(随机烤群友|随机烤猪|抽个群友烤了)$', fnc: 'randomRoast' },
-        { reg: '^#?(烤箱续火|烤箱补货)$', fnc: 'refill' },
+        { reg: '^[#/]?今日烤猪$', fnc: 'selfRoast' },
+        { reg: '^[#/]?(烤群友|加急生火|强行点火|打点后厨|偷换烤架|贿赂主厨).*', fnc: 'roastMember' },
+        { reg: '^[#/]?(随机烤群友|随机烤猪|抽个群友烤了)$', fnc: 'randomRoast' },
+        { reg: '^[#/]?(烤箱续火|烤箱补货)$', fnc: 'refill' },
       ],
     });
   }
 
   // ================= 今日烤猪 =================
   async selfRoast(e) {
-    const userId = String(e.user_id);
+    const userId = String(e.sender.uid);
     const groupId = getEventGroupId(e);
     const attackerName = getEventUserName(e);
     const resolution = resolveDailyPig(userId, groupId);
     const originalPig = resolution.pig;
     if (resolution.recorded_pig_missing) {
-      await e.reply(RECORDED_PIG_RESOURCE_MISSING_TEXT, quoteFlag());
+      await reply(e, RECORDED_PIG_RESOURCE_MISSING_TEXT, quoteFlag());
       return true;
     }
     if (resolution.missing_resources || !originalPig) {
-      await e.reply('猪圈塌房了（数据缺失）', quoteFlag());
+      await reply(e, '猪圈塌房了（数据缺失）', quoteFlag());
       return true;
     }
     let autoRollHint = '';
@@ -137,7 +137,7 @@ export class RollPigRoast extends RollPigApp {
     }
     const blockText = pickSelfRoastBlockText(originalPig);
     if (blockText) {
-      await e.reply(blockText, quoteFlag());
+      await reply(e, blockText, quoteFlag());
       if (resolution.was_auto_created) await deliverReadyReservations(e).catch(() => {});
       return true;
     }
@@ -145,7 +145,7 @@ export class RollPigRoast extends RollPigApp {
     try {
       ({ roastedData, foodName } = await buildSelfRoastData(originalPig));
     } catch (err) {
-      await e.reply(String(err.message || err), quoteFlag());
+      await reply(e, String(err.message || err), quoteFlag());
       return true;
     }
     if (groupId) {
@@ -166,16 +166,16 @@ export class RollPigRoast extends RollPigApp {
 
   // ================= 烤群友 / 加急生火 =================
   async roastMember(e) {
-    if (!e.group_id) {
-      await e.reply('烤群友只能在群里玩哦。', quoteFlag());
+    if (!e.group?.gid) {
+      await reply(e, '烤群友只能在群里玩哦。', quoteFlag());
       return true;
     }
-    const attackerId = String(e.user_id);
+    const attackerId = String(e.sender.uid);
     const attackerName = getEventUserName(e);
-    const groupId = String(e.group_id);
-    const forceMode = detectForceRoastMode(e.msg || '', attackerId);
+    const groupId = String(e.group?.gid);
+    const forceMode = detectForceRoastMode(e.text || '', attackerId);
     if (forceMode === 'super_denied') {
-      await e.reply('口令【强行点火】仅主人可用。', quoteFlag());
+      await reply(e, '口令【强行点火】仅主人可用。', quoteFlag());
       return true;
     }
 
@@ -188,16 +188,16 @@ export class RollPigRoast extends RollPigApp {
       ? 'missing'
       : targetId === attackerId
         ? 'self'
-        : targetId === String(e.self_id)
+        : targetId === String(e.selfId)
           ? 'bot'
           : 'member';
 
     if (kind === 'missing') {
-      await e.reply('请 At 或回复你要烤的群友！', quoteFlag());
+      await reply(e, '请 At 或回复你要烤的群友！', quoteFlag());
       return true;
     }
     if (kind === 'self') {
-      await e.reply('对自己好一点，别自焚。请发送「今日烤猪」。', quoteFlag());
+      await reply(e, '对自己好一点，别自焚。请发送「今日烤猪」。', quoteFlag());
       return true;
     }
     if (kind === 'bot') {
@@ -215,11 +215,11 @@ export class RollPigRoast extends RollPigApp {
         food: foodName,
         group_id: groupId,
       });
-      await e.reply(botText, quoteFlag());
+      await reply(e, botText, quoteFlag());
       return true;
     }
     if (!target.isGroupMember) {
-      await e.reply('暂时无法确认对方仍在本群，请核对成员后再试。', quoteFlag());
+      await reply(e, '暂时无法确认对方仍在本群，请核对成员后再试。', quoteFlag());
       return true;
     }
 
@@ -231,7 +231,7 @@ export class RollPigRoast extends RollPigApp {
     }
     const attackerPig = getPigById(attackerPigId);
     if (!attackerPig) {
-      await e.reply(RECORDED_PIG_RESOURCE_MISSING_TEXT, quoteFlag());
+      await reply(e, RECORDED_PIG_RESOURCE_MISSING_TEXT, quoteFlag());
       return true;
     }
     store.markGroupRollSeen(attackerId, attackerPig.id, groupId);
@@ -244,7 +244,7 @@ export class RollPigRoast extends RollPigApp {
       targetId,
       targetName,
       groupId,
-      deliveryBotId: String(e.self_id),
+      deliveryBotId: String(e.selfId),
       forceMode,
       cooldownSeconds: resolveRoastCooldownSeconds(),
       maxCharges: resolveRoastChargeMax(),
@@ -253,21 +253,21 @@ export class RollPigRoast extends RollPigApp {
     let targetPig = null;
     if (preparation.status !== 'target_ready') {
       if (preparation.status === 'protected') {
-        await e.reply(
+        await reply(e,
           withButtons(e, T.pickFormat(T.PROTECTION_BLOCK_TEXTS, { target: targetName }), ROAST_BUTTONS),
           quoteFlag()
         );
         return true;
       }
       if (preparation.status === 'cooldown_denied' && preparation.cooldown) {
-        await e.reply(
+        await reply(e,
           withButtons(e, formatCooldownMessage(preparation.cooldown.remaining_seconds), ROAST_BUTTONS),
           quoteFlag()
         );
         return true;
       }
       if (preparation.status === 'force_denied') {
-        await e.reply(pickForceLimitText(attackerName, targetName), quoteFlag());
+        await reply(e, pickForceLimitText(attackerName, targetName), quoteFlag());
         return true;
       }
       // 预约创建/加入
@@ -276,14 +276,14 @@ export class RollPigRoast extends RollPigApp {
         prefix = T.pickFormat(T.PROTECTION_BREAK_TEXTS, { target: targetName }) + '\n';
       }
       const noticeText = prefix + pickReservationPrepareText(preparation, { attackerName, targetName });
-      const sendRet = await e.reply(noticeText, quoteFlag());
+      const sendRet = await reply(e, noticeText, quoteFlag());
       // 绑定通知消息 ID，支持回复加入
       if (preparation.reservation && ['reservation_created', 'reservation_joined', 'already_joined'].includes(preparation.status)) {
-        const messageId = sendRet?.message_id || sendRet?.data?.message_id;
+        const messageId = sendRet?.messageId;
         if (messageId) {
           store.bindRoastReservationMessage({
             reservationId: preparation.reservation.reservation_id,
-            botId: String(e.self_id),
+            botId: String(e.selfId),
             groupId,
             messageId: String(messageId),
             dateStr: preparation.reservation.date_str,
@@ -295,24 +295,24 @@ export class RollPigRoast extends RollPigApp {
     targetPig = getPigById(preparation.target_pig_id);
 
     if (preparation.protection_broken) {
-      await e.reply(T.pickFormat(T.PROTECTION_BREAK_TEXTS, { target: targetName }), quoteFlag());
+      await reply(e, T.pickFormat(T.PROTECTION_BREAK_TEXTS, { target: targetName }), quoteFlag());
     }
     if (!targetPig) {
-      await e.reply('目标的小猪资源缺失，暂时无法开火。', quoteFlag());
+      await reply(e, '目标的小猪资源缺失，暂时无法开火。', quoteFlag());
       return true;
     }
     store.markGroupRollSeen(targetId, targetPig.id, groupId);
 
     const blockText = pickMemberTargetBlockText(targetName, targetPig);
     if (blockText) {
-      await e.reply(blockText, quoteFlag());
+      await reply(e, blockText, quoteFlag());
       return true;
     }
 
     // target_ready 时预约层未扣资源，这里补扣
     if (forceMode === 'normal') {
       if (!store.consumeForceUsage(attackerId)) {
-        await e.reply(pickForceLimitText(attackerName, targetName), quoteFlag());
+        await reply(e, pickForceLimitText(attackerName, targetName), quoteFlag());
         return true;
       }
     } else if (!forceMode) {
@@ -321,7 +321,7 @@ export class RollPigRoast extends RollPigApp {
         maxCharges: resolveRoastChargeMax(),
       });
       if (!cd.allowed) {
-        await e.reply(withButtons(e, formatCooldownMessage(cd.remaining_seconds), ROAST_BUTTONS), quoteFlag());
+        await reply(e, withButtons(e, formatCooldownMessage(cd.remaining_seconds), ROAST_BUTTONS), quoteFlag());
         return true;
       }
     }
@@ -336,7 +336,7 @@ export class RollPigRoast extends RollPigApp {
         forceMode,
       });
     } catch (err) {
-      await e.reply(String(err.message || err), quoteFlag());
+      await reply(e, String(err.message || err), quoteFlag());
       return true;
     }
     await finishRoastOutcome(e, outcome, {
@@ -351,16 +351,16 @@ export class RollPigRoast extends RollPigApp {
   }
 
   async _finishUnrolledAttempt(e, attackerName, forceMode) {
-    const attempt = store.recordUnrolledRoastAttempt(String(e.user_id));
+    const attempt = store.recordUnrolledRoastAttempt(String(e.sender.uid));
     if (attempt.count <= 1) {
-      await e.reply(withButtons(e, T.pick(T.UNROLLED_ROAST_WARNING_TEXTS), ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, T.pick(T.UNROLLED_ROAST_WARNING_TEXTS), ROAST_BUTTONS), quoteFlag());
       return;
     }
     let foodPig;
     try {
       foodPig = { ...pickFoodPig() };
     } catch (err) {
-      await e.reply(String(err.message || err), quoteFlag());
+      await reply(e, String(err.message || err), quoteFlag());
       return;
     }
     const pool = forceMode ? T.UNROLLED_FORCE_ROAST_BACKFIRE_TEXTS : T.UNROLLED_ROAST_BACKFIRE_TEXTS;
@@ -370,21 +370,21 @@ export class RollPigRoast extends RollPigApp {
 
   // ================= 随机烤群友 =================
   async randomRoast(e) {
-    if (!e.group_id) {
-      await e.reply('随机烤猪只能在群里玩哦。', quoteFlag());
+    if (!e.group?.gid) {
+      await reply(e, '随机烤猪只能在群里玩哦。', quoteFlag());
       return true;
     }
-    const attackerId = String(e.user_id);
+    const attackerId = String(e.sender.uid);
     const attackerName = getEventUserName(e);
-    const groupId = String(e.group_id);
+    const groupId = String(e.group?.gid);
 
-    const candidates = await getGroupRollCandidates(e, store, new Set([attackerId, String(e.self_id)]));
+    const candidates = await getGroupRollCandidates(e, store, new Set([attackerId, String(e.selfId)]));
     if (candidates === null) {
-      await e.reply(withButtons(e, '暂时无法读取当前群成员，随机烤猪没有执行。', ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, '暂时无法读取当前群成员，随机烤猪没有执行。', ROAST_BUTTONS), quoteFlag());
       return true;
     }
     if (!candidates.length) {
-      await e.reply(withButtons(e, '今天还没有别人抽猪，没有可以烤的目标！', ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, '今天还没有别人抽猪，没有可以烤的目标！', ROAST_BUTTONS), quoteFlag());
       return true;
     }
     const attackerPigId = store.getDailyRoll(attackerId);
@@ -394,7 +394,7 @@ export class RollPigRoast extends RollPigApp {
     }
     const attackerPig = getPigById(attackerPigId);
     if (!attackerPig) {
-      await e.reply(withButtons(e, RECORDED_PIG_RESOURCE_MISSING_TEXT, ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, RECORDED_PIG_RESOURCE_MISSING_TEXT, ROAST_BUTTONS), quoteFlag());
       return true;
     }
     store.markGroupRollSeen(attackerId, attackerPig.id, groupId);
@@ -403,19 +403,19 @@ export class RollPigRoast extends RollPigApp {
     const targetName = await getGroupMemberDisplayName(e, targetId);
     const targetPig = getPigById(store.getDailyRoll(targetId));
     if (!targetPig) {
-      await e.reply(withButtons(e, `系统随机选中了【${targetName}】，但对方的猪数据异常。`, ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, `系统随机选中了【${targetName}】，但对方的猪数据异常。`, ROAST_BUTTONS), quoteFlag());
       return true;
     }
     store.markGroupRollSeen(targetId, targetPig.id, groupId);
 
     if (store.isProtected(groupId, targetId)) {
       const protText = T.pickFormat(T.PROTECTION_BLOCK_TEXTS, { target: targetName });
-      await e.reply(withButtons(e, `系统随机选中了【${targetName}】——\n${protText}`, ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, `系统随机选中了【${targetName}】——\n${protText}`, ROAST_BUTTONS), quoteFlag());
       return true;
     }
     const blockText = pickRandomTargetBlockText(targetName, targetPig);
     if (blockText) {
-      await e.reply(withButtons(e, blockText, ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, blockText, ROAST_BUTTONS), quoteFlag());
       return true;
     }
     const cd = store.consumeRoastCooldown(attackerId, {
@@ -423,7 +423,7 @@ export class RollPigRoast extends RollPigApp {
       maxCharges: resolveRoastChargeMax(),
     });
     if (!cd.allowed) {
-      await e.reply(withButtons(e, formatCooldownMessage(cd.remaining_seconds), ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, formatCooldownMessage(cd.remaining_seconds), ROAST_BUTTONS), quoteFlag());
       return true;
     }
     const intro = T.pickFormat(T.RANDOM_ROAST_INTRO_TEXTS, { target: targetName }) + '\n';
@@ -437,7 +437,7 @@ export class RollPigRoast extends RollPigApp {
         introText: intro,
       });
     } catch (err) {
-      await e.reply(String(err.message || err), quoteFlag());
+      await reply(e, String(err.message || err), quoteFlag());
       return true;
     }
     await finishRoastOutcome(e, outcome, {
@@ -453,27 +453,27 @@ export class RollPigRoast extends RollPigApp {
 
   // ================= 烤箱续火（简化版：管理员/主人一键确认补货） =================
   async refill(e) {
-    if (!e.group_id) {
-      await e.reply('烤箱续火只能在群里发起。', quoteFlag());
+    if (!e.group?.gid) {
+      await reply(e, '烤箱续火只能在群里发起。', quoteFlag());
       return true;
     }
-    const groupId = String(e.group_id);
-    const initiatorId = String(e.user_id);
+    const groupId = String(e.group?.gid);
+    const initiatorId = String(e.sender.uid);
     // 权限先判定：原版由群主/管理员/主人放行，非管理者只能登记等待
     const isManager = isGroupManager(e);
     const activeUsers = store.getGroupActiveUserIds(groupId);
     if (!activeUsers.has(initiatorId)) {
-      await e.reply(T.pick(T.ROAST_REFILL_INACTIVE_INITIATOR_TEXTS), quoteFlag());
+      await reply(e, T.pick(T.ROAST_REFILL_INACTIVE_INITIATOR_TEXTS), quoteFlag());
       return true;
     }
     const prep = store.prepareGroupRoastRefill({
       groupId,
       initiatorId,
       initiatorName: getEventUserName(e),
-      deliveryBotId: String(e.self_id),
+      deliveryBotId: String(e.selfId),
     });
     if (prep.status === 'insufficient_active') {
-      await e.reply(
+      await reply(e,
         withButtons(e, T.pick(T.ROAST_REFILL_INSUFFICIENT_ACTIVE_TEXTS), ROAST_REFILL_GUIDE_BUTTONS),
         quoteFlag()
       );
@@ -484,7 +484,7 @@ export class RollPigRoast extends RollPigApp {
     // 管理以上直接对这条已存在的申请确认放行，避免非管理先发起后无人能结算。
     if (prep.status === 'existing') {
       if (!isManager) {
-        await e.reply(
+        await reply(e,
           `🔥本群已有一场续火申请在进行中。\n当前实现为简化版：需要群主/管理员/主人发送「烤箱续火」确认放行。`,
           quoteFlag()
         );
@@ -495,7 +495,7 @@ export class RollPigRoast extends RollPigApp {
 
     // 新申请：非管理者只登记等待，由管理以上确认
     if (!isManager) {
-      await e.reply(
+      await reply(e,
         `🔥【烤箱续火申请】已登记。\n当前实现为简化版：需要群主/管理员/主人发送「烤箱续火」确认放行。\n` +
           `今日活跃小猪 ${prep.active_user_ids?.length || 0} 头。`,
         quoteFlag()
@@ -519,7 +519,7 @@ export class RollPigRoast extends RollPigApp {
       maxCharges,
     });
     if (result.completed) {
-      await e.reply(
+      await reply(e,
         withButtons(
           e,
           T.pickFormat(T.ROAST_REFILL_SUCCESS_TEXTS, {
@@ -533,7 +533,7 @@ export class RollPigRoast extends RollPigApp {
         quoteFlag()
       );
     } else {
-      await e.reply(withButtons(e, '补货未能完成，请稍后再试。', ROAST_BUTTONS), quoteFlag());
+      await reply(e, withButtons(e, '补货未能完成，请稍后再试。', ROAST_BUTTONS), quoteFlag());
     }
     return true;
   }
